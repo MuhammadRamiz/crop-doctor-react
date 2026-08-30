@@ -109,16 +109,40 @@ function App() {
     setReadoutRight(nextConnected ? ip : 'ready')
   }
 
-  const handleConnect = () => {
+  const handleConnect = async () => {
     const ip = document.getElementById('ipInput')?.value.trim() || ''
     if (!ip) {
       document.getElementById('ipInput')?.focus()
       return
     }
 
-    setDeviceIP(ip)
-    setConnectedState(true, ip)
-    setFeedImage(`${STREAM_PATH(ip)}?t=${Date.now()}`)
+    setConnectedState(false, ip)
+    setReadoutLeft('checking camera…')
+    setReadoutRight(ip)
+    setHintText('waiting for the camera response')
+
+    if (window.location.protocol === 'https:') {
+      setReadoutLeft('HTTPS cannot reach a local HTTP camera')
+      setHintText('open the local app on the same Wi-Fi, or use a public HTTPS camera API')
+      return
+    }
+
+    try {
+      const response = await fetch(CAPTURE_PATH(ip), {
+        cache: 'no-store',
+        signal: AbortSignal.timeout(5000),
+      })
+      if (!response.ok) throw new Error('camera response error')
+
+      await response.blob()
+      setDeviceIP(ip)
+      setConnectedState(true, ip)
+      setFeedImage(`${STREAM_PATH(ip)}?t=${Date.now()}`)
+    } catch {
+      setReadoutLeft('camera unavailable')
+      setReadoutRight(ip)
+      setHintText('check the camera IP and connect this device to the same Wi-Fi')
+    }
   }
 
   const logScan = (isHealthy, confidence) => {
@@ -283,7 +307,7 @@ function App() {
                   <span id="readoutRight">{readoutRight}</span>
                 </div>
                 <div className="connect-row">
-                  <input id="ipInput" className="ip-input" type="text" placeholder="Enter camera IP" defaultValue="192.168.1.10" />
+                  <input id="ipInput" className="ip-input" type="text" placeholder="Enter camera IP, e.g. 192.168.2.50" />
                   <button type="button" className="btn btn-primary" id="connectBtn" onClick={handleConnect}>Connect</button>
                 </div>
                 <div className="shutter-row">
