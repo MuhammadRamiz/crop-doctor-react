@@ -74,13 +74,21 @@ const teamMembers = [
 const builtWith = ['ESP32-CAM', 'ReactJS', 'Generative AI', 'AI / ML', 'HTML/CSS/JS']
 const MAX_IMAGE_SIZE = 10 * 1024 * 1024
 const SUPPORTED_IMAGE_TYPES = ['image/jpeg', 'image/png', 'image/webp']
-const plantLabels = ['plant', 'leaf', 'tree', 'flower', 'vegetable', 'fruit', 'corn', 'broccoli', 'cauliflower', 'cucumber', 'zucchini', 'squash', 'pepper', 'potato', 'banana', 'pineapple', 'strawberry', 'orange', 'lemon', 'fig', 'vine', 'greenhouse', 'daisy', 'rose', 'sunflower']
-const genericPlantLabels = ['plant', 'leaf', 'tree', 'flower', 'vegetable', 'fruit', 'hip', 'pot', 'flowerpot', 'vine', 'greenhouse', 'shrub', 'bush']
+const plantLabels = [
+  'plant', 'leaf', 'tree', 'flower', 'vegetable', 'fruit', 'corn', 'broccoli', 'cauliflower', 'cucumber',
+  'zucchini', 'squash', 'pepper', 'potato', 'banana', 'pineapple', 'strawberry', 'orange', 'lemon', 'fig',
+  'vine', 'greenhouse', 'daisy', 'rose', 'sunflower', 'cactus', 'succulent', 'aloe', 'agave', 'jade', 'fern',
+  'palm', 'orchid', 'monstera', 'bamboo', 'ivy', 'spider plant', 'prickly pear', 'bonsai', 'herb', 'bush', 'shrub'
+]
+const genericPlantLabels = ['plant', 'leaf', 'tree', 'flower', 'vegetable', 'fruit', 'hip', 'pot', 'flowerpot', 'vine', 'greenhouse', 'shrub', 'bush', 'bushes']
 
 const formatPlantName = (className) => {
-  const name = className.split(',')[0].trim()
-  if (genericPlantLabels.includes(name.toLowerCase())) return 'Plant / crop'
-  return name.replace(/\b\w/g, (letter) => letter.toUpperCase())
+  const rawName = (className || '').split(',')[0].trim()
+  const name = rawName.replace(/[_-]+/g, ' ')
+  if (!name) return 'Plant / crop'
+  const normalized = name.toLowerCase()
+  if (genericPlantLabels.includes(normalized)) return 'Plant / crop'
+  return name.split(' ').map((word) => word ? word.charAt(0).toUpperCase() + word.slice(1) : word).join(' ')
 }
 
 const hasVegetationColor = (canvas) => {
@@ -428,8 +436,15 @@ function App() {
       })
       .sort((first, second) => second.probability - first.probability)[0]
 
+    const fallbackPrediction = predictions
+      .filter(({ className, probability }) => {
+        const label = className.toLowerCase()
+        return probability >= 0.2 && !genericPlantLabels.includes(label.split(',')[0].trim())
+      })
+      .sort((first, second) => second.probability - first.probability)[0]
+
     if (!hasPlant) return { accepted: false, reason: 'plant or crop not detected' }
-    return { accepted: true, plantName: formatPlantName(plantPrediction?.className || 'Plant / crop') }
+    return { accepted: true, plantName: formatPlantName(plantPrediction?.className || fallbackPrediction?.className || 'Plant / crop') }
   }
 
   const estimatePlantHealth = (canvas) => {
