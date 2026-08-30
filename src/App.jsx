@@ -131,17 +131,27 @@ function App() {
     setLogs((prev) => [entry, ...prev].slice(0, 4))
   }
 
-  const showResult = (isHealthy, confidence, isDemo = false) => {
+  const showResult = (isHealthy, confidence) => {
     setTimeout(() => {
       setStampText(isHealthy ? 'Healthy' : 'At Risk')
       setStampKind(isHealthy ? 'healthy' : 'risk')
       setStampVisible(true)
-      setReadoutLeft(isDemo ? 'demo preview · device unreachable' : 'diagnosis complete')
+      setReadoutLeft('diagnosis complete')
       setReadoutRight(`${confidence}% confidence`)
       setShutterDisabled(false)
       setLastScan(`${confidence}%`)
+      setScanCount((count) => count + 1)
       logScan(isHealthy, confidence)
     }, 1000)
+  }
+
+  const rejectFrame = (message) => {
+    setFrameScanning(false)
+    setStampVisible(false)
+    setShutterDisabled(false)
+    setReadoutLeft(message)
+    setReadoutRight('scan rejected')
+    setHintText('include only a clear plant or crop in the frame')
   }
 
   const runDiagnosis = () => {
@@ -161,14 +171,29 @@ function App() {
       })
       .then((blob) => {
         setFeedImage(URL.createObjectURL(blob))
-        return fetch(HEALTH_PATH(deviceIP)).then((response) => response.json())
+        return fetch(HEALTH_PATH(deviceIP)).then((response) => {
+          if (!response.ok) throw new Error('health service error')
+          return response.json()
+        })
       })
-      .then((data) => showResult(data.status === 'healthy', data.confidence))
+      .then((data) => {
+        const plantDetected = data.isPlant === true || data.plantDetected === true
+        const faceDetected = data.containsFace === true || data.faceDetected === true
+
+        if (faceDetected) {
+          rejectFrame('person detected · frame rejected')
+          return
+        }
+
+        if (!plantDetected) {
+          rejectFrame('plant or crop not detected')
+          return
+        }
+
+        showResult(data.status === 'healthy', data.confidence)
+      })
       .catch(() => {
-        setFeedImage(defaultDemoLeaf)
-        const demoHealthy = Math.random() > 0.35
-        const demoConfidence = Math.round(78 + Math.random() * 20)
-        setTimeout(() => showResult(demoHealthy, demoConfidence, true), 200)
+        rejectFrame('camera or diagnosis service unavailable')
       })
   }
 
@@ -250,7 +275,7 @@ function App() {
                   <div className="sweep" />
                   <img id="feedImg" src={feedImage} alt="Plant camera feed" />
                 </div>
-                <div className="stamp show healthy" style={{ opacity: stampVisible ? 1 : 0 }}>
+                <div className={`stamp ${stampKind}`} style={{ opacity: stampVisible ? 1 : 0 }}>
                   {stampText}
                 </div>
                 <div className="readout">

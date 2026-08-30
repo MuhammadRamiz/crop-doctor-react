@@ -1,16 +1,42 @@
-# React + Vite
+# Crop Doctor
 
-This template provides a minimal setup to get React working in Vite with HMR and some Oxlint rules.
+Crop Doctor is a college project for checking visible crop and plant health from an ESP32-CAM image. The React dashboard captures a frame, asks the connected service to validate it, and displays a health diagnosis only for accepted plant images.
 
-Currently, two official plugins are available:
+## Run locally
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Oxc](https://oxc.rs)
+```bash
+npm install
+npm run dev
+```
+
+Open the local URL shown by Vite. Connect the dashboard to the ESP32-CAM IP address, then use the shutter to scan.
+
+## Image validation contract
+
+The camera service `/health` endpoint must return JSON with an explicit plant result:
+
+```json
+{
+	"isPlant": true,
+	"containsFace": false,
+	"status": "healthy",
+	"confidence": 92
+}
+```
+
+The dashboard rejects a frame when `isPlant` or `plantDetected` is not `true`, or when `containsFace` or `faceDetected` is `true`. Camera and service errors are shown as rejected scans; no demo diagnosis is generated.
+
+## GitHub Pages
+
+The published site is available at:
+
+ https://kaleemullah19.github.io/crop-doctor-react/
+
+To publish a new build:
+
+ ```bash
+ npm run deploy
+```bash
+npm run deploy
+```
 - [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/)
-
-## React Compiler
-
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
-
-## Expanding the Oxlint configuration
-
-If you are developing a production application, we recommend using TypeScript with type-aware lint rules enabled. Check out the [TS template](https://github.com/vitejs/vite/tree/main/packages/create-vite/template-react-ts) for information on how to integrate TypeScript and Oxlint's TypeScript related rules in your project.

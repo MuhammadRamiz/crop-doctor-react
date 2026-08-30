@@ -322,6 +322,7 @@ nav {
 .stamp.show { transform: rotate(-8deg) scale(1); opacity: 1; }
 .stamp.healthy { color: #2e6b3e; border-color: #2e6b3e; background: rgba(46, 107, 62, 0.08); }
 .stamp.risk { color: var(--rust); border-color: var(--rust); background: rgba(193, 87, 46, 0.08); }
+.stamp.rejected { color: #8b3f2c; border-color: #8b3f2c; background: rgba(193, 87, 46, 0.12); }
 
 .readout {
   display: flex;
