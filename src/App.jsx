@@ -369,10 +369,10 @@ function App() {
 
     const greenRatio = greenPixels / Math.max(visiblePixels, 1)
     const stressRatio = stressPixels / Math.max(visiblePixels, 1)
-    const isHealthy = greenRatio >= 0.18 && stressRatio < 0.24
-    const confidence = Math.round(Math.min(94, Math.max(62, 68 + greenRatio * 48 - stressRatio * 20)))
+    const healthScore = Math.round(Math.min(98, Math.max(5, 50 + greenRatio * 100 - stressRatio * 55)))
+    const isHealthy = healthScore >= 55
 
-    return { isHealthy, confidence }
+    return { isHealthy, confidence: healthScore }
   }
 
   const captureDeviceFrame = async () => {
@@ -411,8 +411,8 @@ function App() {
       setStampVisible(false)
       const result = estimatePlantHealth(canvas)
       setReadoutLeft('visual health screening complete')
-      setReadoutRight('local estimate')
-      setHintText('for research use: confirm results with an agronomist or trained model')
+      setReadoutRight('visual health score')
+      setHintText('screening estimate only: confirm results with an agronomist or trained model')
       void addGalleryImage(blob, { source: 'device camera', plantName: validation.plantName, status: result.isHealthy ? 'healthy' : 'risk', confidence: result.confidence })
       showResult(result.isHealthy, result.confidence, validation.plantName)
     }, 'image/jpeg', 0.9)
