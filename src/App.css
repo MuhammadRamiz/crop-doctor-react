@@ -108,7 +108,9 @@ nav {
   width: 42px;
   height: 42px;
   flex: 0 0 42px;
-  object-fit: contain;
+  border-radius: 10px;
+  object-fit: cover;
+  box-shadow: 0 0 0 2px rgba(168, 224, 138, 0.45), 0 6px 16px -7px rgba(0, 0, 0, 0.7);
 }
 
 .nav-links {

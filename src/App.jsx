@@ -127,7 +127,16 @@ function App() {
   useEffect(() => {
     let cancelled = false
 
-    import('@tensorflow-models/mobilenet').then(({ load }) => load({ version: 2, alpha: 1.0 })).then((model) => {
+    Promise.all([
+      import('@tensorflow/tfjs-core'),
+      import('@tensorflow/tfjs-backend-webgl'),
+      import('@tensorflow/tfjs-backend-cpu'),
+      import('@tensorflow-models/mobilenet'),
+    ]).then(async ([tf, , , { load }]) => {
+      await tf.setBackend('webgl').catch(() => tf.setBackend('cpu'))
+      await tf.ready()
+      return load({ version: 2, alpha: 1.0 })
+    }).then((model) => {
       if (!cancelled) {
         plantModel.current = model
         setClassifierStatus('ready')
@@ -367,7 +376,7 @@ function App() {
       <nav>
         <div className="nav-inner wrap">
           <div className="brand">
-            <img src="/crop-doctor-react/favicon.svg" alt="Crop Doctor" />
+            <img src="https://images.unsplash.com/photo-1466692476868-aef1dfb1e735?auto=format&fit=crop&w=400&q=80" alt="Crop Doctor" />
             <span>Crop Doctor</span>
           </div>
 
