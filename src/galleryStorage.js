@@ -42,11 +42,17 @@ const getSupabaseConfig = () => {
   })
 
   if (runtimeUrl && runtimeKey && !isPlaceholderValue(runtimeUrl) && !isPlaceholderValue(runtimeKey)) {
-    if (!runtimeKey.startsWith('eyJhbGci')) {
-      console.warn('⚠️ Supabase key format appears invalid. Expected JWT format starting with "eyJhbGci"')
+    const isPublishableKey = runtimeKey.startsWith('sb_publishable_')
+    const isJwtKey = runtimeKey.startsWith('eyJhbGci')
+
+    if (!isPublishableKey && !isJwtKey) {
+      console.warn('⚠️ Supabase key format appears invalid. Expected a JWT or Supabase publishable key.')
       console.warn('⚠️ Current key format:', runtimeKey.substring(0, 20) + '...')
     } else {
-      console.log('✅ Supabase key format validated (JWT format)')
+      console.log('✅ Supabase key format validated', {
+        isJwtKey,
+        isPublishableKey,
+      })
     }
 
     console.log('✅ Using runtime configuration for Supabase')
