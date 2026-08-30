@@ -238,6 +238,16 @@ function App() {
         'Use an agronomist or soil test before applying treatment or fertilizer.',
       ]
 
+  const getCropRecommendations = (isHealthy, plantName) => {
+    const crop = plantName.toLowerCase()
+    const recommendations = getRecommendations(isHealthy)
+
+    if (crop.includes('tomato')) recommendations.push('For tomato plants, check leaf undersides for whitefly and keep foliage dry overnight.')
+    if (crop.includes('corn')) recommendations.push('For corn, inspect the whorl and lower leaves for chewing damage and nutrient striping.')
+    if (crop.includes('banana')) recommendations.push('For banana plants, check older leaves for fungal spots and keep the soil well drained.')
+    return recommendations
+  }
+
   const viewGalleryImage = (image) => {
     const isHealthy = image.status === 'healthy'
     setSelectedGalleryImageId(image.id)
@@ -248,7 +258,7 @@ function App() {
     setReadoutLeft('saved scan result')
     setReadoutRight(`${image.confidence}% confidence`)
     setLastScan(`${image.confidence}%`)
-    setRecommendations(getRecommendations(isHealthy))
+    setRecommendations(getCropRecommendations(isHealthy, image.plantName || 'Plant / crop'))
   }
 
   const handleConnect = async () => {
@@ -329,10 +339,13 @@ function App() {
       const label = className.toLowerCase()
       return probability >= 0.12 && plantLabels.some((term) => label.includes(term))
     })
+    const plantPrediction = predictions
+      .filter(({ className, probability }) => probability >= 0.12 && plantLabels.some((term) => className.toLowerCase().includes(term)))
+      .sort((first, second) => second.probability - first.probability)[0]
 
     if (hasFace) return { accepted: false, reason: 'person detected · frame rejected' }
     if (!hasPlant) return { accepted: false, reason: 'plant or crop not detected' }
-    return { accepted: true }
+    return { accepted: true, plantName: plantPrediction?.className || 'Plant / crop' }
   }
 
   const estimatePlantHealth = (canvas) => {
@@ -400,8 +413,8 @@ function App() {
       setReadoutLeft('visual health screening complete')
       setReadoutRight('local estimate')
       setHintText('for research use: confirm results with an agronomist or trained model')
-      void addGalleryImage(blob, { source: 'device camera', status: result.isHealthy ? 'healthy' : 'risk', confidence: result.confidence })
-      showResult(result.isHealthy, result.confidence)
+      void addGalleryImage(blob, { source: 'device camera', plantName: validation.plantName, status: result.isHealthy ? 'healthy' : 'risk', confidence: result.confidence })
+      showResult(result.isHealthy, result.confidence, validation.plantName)
     }, 'image/jpeg', 0.9)
   }
 
@@ -455,8 +468,8 @@ function App() {
         setReadoutLeft('visual health screening complete')
         setReadoutRight('local estimate')
         setHintText('for research use: confirm results with an agronomist or trained model')
-        void addGalleryImage(file, { source: 'device gallery', status: result.isHealthy ? 'healthy' : 'risk', confidence: result.confidence })
-        showResult(result.isHealthy, result.confidence)
+        void addGalleryImage(file, { source: 'device gallery', plantName: validation.plantName, status: result.isHealthy ? 'healthy' : 'risk', confidence: result.confidence })
+        showResult(result.isHealthy, result.confidence, validation.plantName)
       } catch {
         URL.revokeObjectURL(previewUrl)
         rejectFrame('plant checker unavailable')
@@ -479,7 +492,7 @@ function App() {
     setLogs((prev) => [entry, ...prev].slice(0, 4))
   }
 
-  const showResult = (isHealthy, confidence) => {
+  const showResult = (isHealthy, confidence, plantName = 'Plant / crop') => {
     setTimeout(() => {
       scanInProgress.current = false
       setStampText(isHealthy ? 'Healthy' : 'At Risk')
@@ -490,7 +503,7 @@ function App() {
       setShutterDisabled(false)
       setLastScan(`${confidence}%`)
       setScanCount((count) => count + 1)
-      setRecommendations(getRecommendations(isHealthy))
+      setRecommendations(getCropRecommendations(isHealthy, plantName))
       logScan(isHealthy, confidence)
     }, 1000)
   }
@@ -548,13 +561,16 @@ function App() {
           return
         }
 
-        void addGalleryImage(blob, { source: 'ESP32-CAM', status: data.status === 'healthy' ? 'healthy' : 'risk', confidence: data.confidence })
-        showResult(data.status === 'healthy', data.confidence)
+        const plantName = data.plantName || data.cropName || data.plant || 'Plant / crop'
+        void addGalleryImage(blob, { source: 'ESP32-CAM', plantName, status: data.status === 'healthy' ? 'healthy' : 'risk', confidence: data.confidence })
+        showResult(data.status === 'healthy', data.confidence, plantName)
       })
       .catch(() => {
         rejectFrame('camera or diagnosis service unavailable')
       })
   }
+
+  const selectedPlantName = gallery.find((image) => image.id === selectedGalleryImageId)?.plantName
 
   return (
     <>
@@ -714,7 +730,7 @@ function App() {
               </div>
 
               <div className={`recommendation-box ${recommendations.length === 0 ? 'empty' : ''}`}>
-                <div className="log-head">{selectedGalleryImageId ? 'Selected plant care plan' : 'Plant care plan'}</div>
+                <div className="log-head">{selectedPlantName ? `Care plan · ${selectedPlantName}` : 'Plant care plan'}</div>
                 {recommendations.length === 0 ? (
                   <p>Complete a plant scan to receive care recommendations based on its result.</p>
                 ) : (
@@ -746,6 +762,7 @@ function App() {
                         <img src={image.url} alt={`Captured ${image.status === 'healthy' ? 'healthy' : 'at-risk'} plant`} />
                         <div className="gallery-meta">
                           <div>
+                            <div className="gallery-plant-name">{image.plantName || 'Plant / crop'}</div>
                             <span className={`tag ${image.status}`}>{image.status === 'healthy' ? 'Healthy' : 'At Risk'}</span>
                             <div className="gallery-confidence">{image.confidence}% confidence</div>
                           </div>
