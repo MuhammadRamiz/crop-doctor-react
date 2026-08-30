@@ -30,7 +30,8 @@ const getSupabaseConfig = () => {
     hasUrl: !!(window.SUPABASE_CONFIG?.url),
     hasKey: !!(window.SUPABASE_CONFIG?.key),
     urlPrefix: window.SUPABASE_CONFIG?.url ? window.SUPABASE_CONFIG.url.substring(0, 20) + '...' : 'none',
-    keyPrefix: window.SUPABASE_CONFIG?.key ? window.SUPABASE_CONFIG.key.substring(0, 10) + '...' : 'none'
+    keyPrefix: window.SUPABASE_CONFIG?.key ? window.SUPABASE_CONFIG.key.substring(0, 15) + '...' : 'none',
+    keyLength: window.SUPABASE_CONFIG?.key?.length || 0
   })
   
   if (window.SUPABASE_CONFIG && window.SUPABASE_CONFIG.url && window.SUPABASE_CONFIG.key) {
@@ -39,6 +40,12 @@ const getSupabaseConfig = () => {
         window.SUPABASE_CONFIG.key === 'YOUR_SUPABASE_ANON_KEY_HERE') {
       console.warn('⚠️ Runtime config contains placeholder values - not configured')
       return { url: null, key: null, source: 'runtime-placeholder' }
+    }
+    
+    // Validate key format (Supabase keys should be JWT format starting with eyJhbGci)
+    if (!window.SUPABASE_CONFIG.key.startsWith('eyJhbGci')) {
+      console.warn('⚠️ Supabase key format appears invalid. Expected JWT format starting with "eyJhbGci"')
+      console.warn('⚠️ Current key format:', window.SUPABASE_CONFIG.key.substring(0, 20) + '...')
     }
     
     console.log('✅ Using runtime configuration for Supabase')
