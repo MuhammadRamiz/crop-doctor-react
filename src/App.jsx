@@ -97,6 +97,7 @@ function App() {
   const [logs, setLogs] = useState([])
   const [recommendations, setRecommendations] = useState([])
   const [gallery, setGallery] = useState([])
+  const [selectedGalleryImageId, setSelectedGalleryImageId] = useState(null)
   const [shutterDisabled, setShutterDisabled] = useState(true)
   const videoRef = useRef(null)
   const deviceCameraStream = useRef(null)
@@ -198,6 +199,7 @@ function App() {
       const url = URL.createObjectURL(image.blob)
       galleryObjectUrls.current.push(url)
       setGallery((previous) => [{ ...image, url }, ...previous])
+      setSelectedGalleryImageId(image.id)
     } catch {
       setHintText('image captured · browser storage unavailable')
     }
@@ -208,6 +210,10 @@ function App() {
     URL.revokeObjectURL(image.url)
     const remainingImages = gallery.filter((item) => item.id !== image.id)
     setGallery(remainingImages)
+    if (selectedGalleryImageId === image.id) {
+      setSelectedGalleryImageId(null)
+      setRecommendations([])
+    }
     setLogs(remainingImages.slice(0, 4).map((item) => ({
       isHealthy: item.status === 'healthy',
       confidence: item.confidence,
@@ -230,6 +236,7 @@ function App() {
 
   const viewGalleryImage = (image) => {
     const isHealthy = image.status === 'healthy'
+    setSelectedGalleryImageId(image.id)
     setFeedImage(image.url)
     setStampText(isHealthy ? 'Healthy' : 'At Risk')
     setStampKind(isHealthy ? 'healthy' : 'risk')
@@ -629,7 +636,7 @@ function App() {
               </div>
 
               <div className={`recommendation-box ${recommendations.length === 0 ? 'empty' : ''}`}>
-                <div className="log-head">Plant care plan</div>
+                <div className="log-head">{selectedGalleryImageId ? 'Selected plant care plan' : 'Plant care plan'}</div>
                 {recommendations.length === 0 ? (
                   <p>Complete a plant scan to receive care recommendations based on its result.</p>
                 ) : (
@@ -649,7 +656,7 @@ function App() {
                   <div className="gallery-grid">
                     {gallery.map((image) => (
                       <div
-                        className="gallery-item"
+                        className={`gallery-item ${selectedGalleryImageId === image.id ? 'selected' : ''}`}
                         key={image.id}
                         role="button"
                         tabIndex="0"
