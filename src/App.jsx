@@ -212,7 +212,11 @@ function App() {
 
   const addGalleryImage = async (blob, metadata) => {
     try {
-      const image = await saveGalleryImage(blob, metadata)
+      const bytes = await blob.arrayBuffer()
+      const digest = await crypto.subtle.digest('SHA-256', bytes)
+      const imageHash = Array.from(new Uint8Array(digest), (byte) => byte.toString(16).padStart(2, '0')).join('')
+      const image = await saveGalleryImage(blob, { ...metadata, imageHash })
+      if (image.duplicate) return image
       const url = URL.createObjectURL(image.blob)
       galleryObjectUrls.current.push(url)
       setGallery((previous) => [{ ...image, url }, ...previous])
@@ -417,7 +421,7 @@ function App() {
       return
     }
 
-    canvas.toBlob((blob) => {
+    canvas.toBlob(async (blob) => {
       if (!blob) {
         rejectFrame('could not capture camera frame')
         return
@@ -428,7 +432,10 @@ function App() {
       setReadoutLeft('visual health screening complete')
       setReadoutRight('visual health score')
       setHintText('screening estimate only: confirm results with an agronomist or trained model')
-      void addGalleryImage(blob, { source: 'device camera', plantName: validation.plantName, status: result.isHealthy ? 'healthy' : 'risk', confidence: result.confidence })
+      const savedImage = await addGalleryImage(blob, { source: 'device camera', plantName: validation.plantName, status: result.isHealthy ? 'healthy' : 'risk', confidence: result.confidence })
+      if (savedImage?.duplicate) {
+        setUploadError('This camera image is already in the gallery.')
+      }
       showResult(result.isHealthy, result.confidence, validation.plantName)
     }, 'image/jpeg', 0.9)
   }
@@ -467,6 +474,7 @@ function App() {
         status: result.isHealthy ? 'healthy' : 'risk',
         confidence: result.confidence,
       })
+      if (imageRecord?.duplicate) return { error: 'This image is already in the gallery.' }
       return imageRecord ? { image: imageRecord, result, plantName: validation.plantName } : { error: 'could not save selected image' }
     } catch {
       return { error: 'plant checker unavailable' }
@@ -496,10 +504,11 @@ function App() {
     }
 
     if (rejectedFiles.length > 0) {
-      const plantRejections = rejectedFiles.filter(({ error }) => error === 'Only clear plant or crop images are supported.')
-      setUploadError(plantRejections.length === rejectedFiles.length
-        ? `${rejectedFiles.length} image${rejectedFiles.length === 1 ? '' : 's'} rejected. Only clear plant or crop images are supported.`
-        : `${rejectedFiles.length} image${rejectedFiles.length === 1 ? '' : 's'} rejected. Check the upload message for supported files.`)
+      const summaries = [...new Set(rejectedFiles.map(({ error }) => error))].map((error) => {
+        const count = rejectedFiles.filter((file) => file.error === error).length
+        return `${count} image${count === 1 ? '' : 's'}: ${error}`
+      })
+      setUploadError(summaries.join(' '))
     }
 
     const lastResult = results[results.length - 1]

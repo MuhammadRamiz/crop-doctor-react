@@ -26,11 +26,19 @@ export const getGalleryImages = async () => {
 
 export const saveGalleryImage = async (blob, metadata) => {
   const database = await openDatabase()
-  const transaction = database.transaction(STORE_NAME, 'readwrite')
+  const readTransaction = database.transaction(STORE_NAME, 'readonly')
+  const existingImages = await requestAsPromise(readTransaction.objectStore(STORE_NAME).getAll())
+  database.close()
+
+  const duplicate = existingImages.find((image) => image.imageHash === metadata.imageHash)
+  if (duplicate) return { duplicate: true, ...duplicate }
+
+  const writeDatabase = await openDatabase()
+  const transaction = writeDatabase.transaction(STORE_NAME, 'readwrite')
   const record = { blob, ...metadata, createdAt: Date.now() }
   const id = await requestAsPromise(transaction.objectStore(STORE_NAME).add(record))
-  database.close()
-  return { id, ...record }
+  writeDatabase.close()
+  return { duplicate: false, id, ...record }
 }
 
 export const removeGalleryImage = async (id) => {
