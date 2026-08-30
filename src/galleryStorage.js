@@ -46,6 +46,8 @@ const getSupabaseConfig = () => {
     if (!window.SUPABASE_CONFIG.key.startsWith('eyJhbGci')) {
       console.warn('⚠️ Supabase key format appears invalid. Expected JWT format starting with "eyJhbGci"')
       console.warn('⚠️ Current key format:', window.SUPABASE_CONFIG.key.substring(0, 20) + '...')
+    } else {
+      console.log('✅ Supabase key format validated (JWT format)')
     }
     
     console.log('✅ Using runtime configuration for Supabase')
