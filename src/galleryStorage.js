@@ -66,16 +66,25 @@ if (supabase) {
   console.log('✅ Supabase initialized successfully', { 
     source: config.source,
     urlPrefix: config.url.substring(0, 20) + '...',
-    clientCreated: true
+    clientCreated: true,
+    fullUrl: config.url
   })
   
-  // Test connection
-  supabase.from('scans').select('count').then(({ data, error }) => {
+  // Test connection with more detailed error handling
+  supabase.from('scans').select('count', { count: 'exact', head: true }).then(({ data, error, count }) => {
     if (error) {
       console.error('❌ Supabase connection test failed:', error)
+      console.error('❌ Error details:', {
+        message: error.message,
+        code: error.code,
+        details: error.details,
+        hint: error.hint
+      })
     } else {
-      console.log('✅ Supabase connection test successful')
+      console.log('✅ Supabase connection test successful', { count })
     }
+  }).catch(err => {
+    console.error('❌ Supabase connection test exception:', err)
   })
 } else {
   console.warn('⚠️ Supabase not configured - falling back to local storage', { 

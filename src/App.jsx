@@ -229,15 +229,25 @@ function App() {
 
   useEffect(() => {
     const checkSupabaseConnection = () => {
-      const hasUrl = !!import.meta.env.VITE_SUPABASE_URL
-      const hasKey = !!import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY
-      const isConnected = hasUrl && hasKey
+      // Check both environment variables and runtime config
+      const envUrl = import.meta.env.VITE_SUPABASE_URL
+      const envKey = import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY
+      const runtimeConfig = window.SUPABASE_CONFIG
+      
+      const hasEnvUrl = !!envUrl
+      const hasEnvKey = !!envKey
+      const hasRuntimeConfig = !!(runtimeConfig?.url && runtimeConfig?.key)
+      
+      const isConnected = hasEnvUrl && hasEnvKey || hasRuntimeConfig
       setSupabaseConnected(isConnected)
+      
       console.log('🔌 Supabase connection status:', { 
-        hasUrl, 
-        hasKey, 
+        hasEnvUrl, 
+        hasEnvKey, 
+        hasRuntimeConfig,
         isConnected,
-        urlPrefix: hasUrl ? import.meta.env.VITE_SUPABASE_URL?.substring(0, 20) + '...' : 'none'
+        source: hasEnvUrl && hasEnvKey ? 'environment' : (hasRuntimeConfig ? 'runtime' : 'none'),
+        urlPrefix: (hasEnvUrl ? envUrl : (hasRuntimeConfig ? runtimeConfig.url : null))?.substring(0, 20) + '...' || 'none'
       })
     }
     

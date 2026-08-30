@@ -27,14 +27,18 @@
         keyPrefix: window.SUPABASE_CONFIG.key.substring(0, 15) + '...'
       });
       
-      // Test Supabase connection immediately
-      fetch(`${window.SUPABASE_CONFIG.url}/rest/v1/`, {
+      // Test Supabase connection with proper API call
+      fetch(`${window.SUPABASE_CONFIG.url}/rest/v1/scans?select=count`, {
         headers: {
           'apikey': window.SUPABASE_CONFIG.key,
-          'Authorization': `Bearer ${window.SUPABASE_CONFIG.key}`
+          'Authorization': `Bearer ${window.SUPABASE_CONFIG.key}`,
+          'Content-Type': 'application/json'
         }
       }).then(response => {
         console.log('🔍 Supabase API test:', response.status, response.ok ? '✅ Connected' : '❌ Failed');
+        if (!response.ok) {
+          response.text().then(text => console.error('❌ Error details:', text));
+        }
       }).catch(error => {
         console.error('❌ Supabase connection test failed:', error);
       });
