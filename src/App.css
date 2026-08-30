@@ -93,11 +93,10 @@ nav {
 }
 
 .brand {
-  position: relative;
   display: flex;
   align-items: center;
-  padding-left: 118px;
-  min-height: 60px;
+  gap: 12px;
+  min-height: 44px;
   font-family: 'Fraunces', serif;
   font-size: 1.32rem;
   font-weight: 600;
@@ -106,16 +105,10 @@ nav {
 
 .brand span { margin-top: 2px; }
 .brand img {
-  position: absolute;
-  left: -14px;
-  top: 50%;
-  transform: translateY(-50%);
-  width: 136px;
-  height: 136px;
-  border-radius: 22px;
-  object-fit: cover;
-  box-shadow: 0 0 0 3px rgba(168, 224, 138, 0.45), 0 12px 26px -8px rgba(0, 0, 0, 0.7);
-  z-index: 5;
+  width: 42px;
+  height: 42px;
+  flex: 0 0 42px;
+  object-fit: contain;
 }
 
 .nav-links {
@@ -743,8 +736,6 @@ footer {
 }
 
 @media (max-width: 860px) {
-  .brand { padding-left: 90px; }
-  .brand img { width: 100px; height: 100px; left: -10px; }
   .nav-links { display: none; }
   .hamburger { display: flex; }
 }
@@ -752,6 +743,8 @@ footer {
 @media (max-width: 560px) {
   .wrap { padding: 0 18px; }
   .nav-inner { padding-left: 18px; padding-right: 18px; }
+  .brand { gap: 9px; font-size: 1.15rem; }
+  .brand img { width: 36px; height: 36px; flex-basis: 36px; }
   .hero-top h1 { font-size: 2.5rem; }
   .how-grid, .why-grid, .team-grid, .built-grid { grid-template-columns: 1fr; }
   .connect-row { flex-direction: column; }

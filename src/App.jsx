@@ -367,7 +367,7 @@ function App() {
       <nav>
         <div className="nav-inner wrap">
           <div className="brand">
-            <img src="https://images.unsplash.com/photo-1466692476868-aef1dfb1e735?auto=format&fit=crop&w=400&q=80" alt="Crop Doctor" />
+            <img src="/crop-doctor-react/favicon.svg" alt="Crop Doctor" />
             <span>Crop Doctor</span>
           </div>
 
