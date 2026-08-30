@@ -63,6 +63,8 @@ const teamMembers = [
 ]
 
 const builtWith = ['ESP32-CAM', 'Python', 'Flask', 'AI / ML', 'HTML/CSS/JS']
+const MAX_IMAGE_SIZE = 10 * 1024 * 1024
+const SUPPORTED_IMAGE_TYPES = ['image/jpeg', 'image/png', 'image/webp']
 const plantLabels = ['plant', 'leaf', 'tree', 'flower', 'vegetable', 'fruit', 'corn', 'broccoli', 'cauliflower', 'cucumber', 'zucchini', 'squash', 'pepper', 'potato', 'banana', 'pineapple', 'strawberry', 'orange', 'lemon', 'fig', 'vine', 'greenhouse', 'daisy', 'rose', 'sunflower']
 const faceLabels = ['person', 'face', 'man', 'woman', 'boy', 'girl', 'head', 'human']
 
@@ -406,8 +408,14 @@ function App() {
     const file = event.target.files?.[0]
     event.target.value = ''
     if (!file) return
-    if (!file.type.startsWith('image/')) {
-      rejectFrame('please select an image file')
+    if (!SUPPORTED_IMAGE_TYPES.includes(file.type)) {
+      rejectFrame('unsupported image format')
+      setHintText('choose a JPG, PNG, or WebP image')
+      return
+    }
+    if (file.size > MAX_IMAGE_SIZE) {
+      rejectFrame('image is too large')
+      setHintText('choose an image smaller than 10 MB')
       return
     }
     if (scanInProgress.current) return
@@ -642,7 +650,7 @@ function App() {
                   )}
                 </div>
                 <div className="upload-row">
-                  <input ref={fileInputRef} className="file-input" type="file" accept="image/*" onChange={handleImageSelect} />
+                  <input ref={fileInputRef} className="file-input" type="file" accept="image/jpeg,image/png,image/webp" onChange={handleImageSelect} />
                   <button type="button" className="btn btn-upload" onClick={() => fileInputRef.current?.click()}>
                     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
                       <path d="M12 16V4M7 9l5-5 5 5M5 20h14" />

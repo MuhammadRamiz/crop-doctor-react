@@ -13,6 +13,8 @@ Open the local URL shown by Vite. Connect the dashboard to the ESP32-CAM IP addr
 
 Visitors can use **Use this device camera** on the HTTPS GitHub Pages site. The browser will ask for camera permission and prefer the rear camera on mobile devices. Visitors can also choose an existing plant image with **Choose plant image**. Selected images use the same plant-only validation, health screening, care plan, and gallery workflow. The first device scan downloads the plant checker model and may take a few seconds. The ESP32-CAM option is intended for a device on the same local network.
 
+Uploaded files must be JPG, PNG, or WebP images smaller than 10 MB.
+
 ## Image validation contract
 
 The camera service `/health` endpoint must return JSON with an explicit plant result:
