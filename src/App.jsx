@@ -92,7 +92,6 @@ function App() {
   const [connected, setConnected] = useState(false)
   const [deviceCameraActive, setDeviceCameraActive] = useState(false)
   const [classifierStatus, setClassifierStatus] = useState('loading')
-  const [scanCount, setScanCount] = useState(0)
   const [feedImage, setFeedImage] = useState(defaultDemoLeaf)
   const [mobileOpen, setMobileOpen] = useState(false)
   const [frameScanning, setFrameScanning] = useState(false)
@@ -510,7 +509,6 @@ function App() {
       setReadoutRight(`${confidence}% confidence`)
       setShutterDisabled(false)
       setLastScan(`${confidence}%`)
-      setScanCount((count) => count + 1)
       setRecommendations(getCropRecommendations(isHealthy, plantName))
       logScan(isHealthy, confidence)
     }, 1000)
@@ -579,6 +577,7 @@ function App() {
   }
 
   const selectedPlantName = gallery.find((image) => image.id === selectedGalleryImageId)?.plantName
+  const scanCount = gallery.length
 
   return (
     <>
