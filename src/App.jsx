@@ -74,7 +74,6 @@ const builtWith = ['ESP32-CAM', 'ReactJS', 'Generative AI', 'AI / ML', 'HTML/CSS
 const MAX_IMAGE_SIZE = 10 * 1024 * 1024
 const SUPPORTED_IMAGE_TYPES = ['image/jpeg', 'image/png', 'image/webp']
 const plantLabels = ['plant', 'leaf', 'tree', 'flower', 'vegetable', 'fruit', 'corn', 'broccoli', 'cauliflower', 'cucumber', 'zucchini', 'squash', 'pepper', 'potato', 'banana', 'pineapple', 'strawberry', 'orange', 'lemon', 'fig', 'vine', 'greenhouse', 'daisy', 'rose', 'sunflower']
-const faceLabels = ['person', 'face', 'man', 'woman', 'boy', 'girl', 'head', 'human']
 const genericPlantLabels = ['plant', 'leaf', 'tree', 'flower', 'vegetable', 'fruit', 'hip', 'pot', 'flowerpot', 'vine', 'greenhouse', 'shrub', 'bush']
 
 const formatPlantName = (className) => {
@@ -138,6 +137,7 @@ function App() {
   const fileInputRef = useRef(null)
   const deviceCameraStream = useRef(null)
   const plantModel = useRef(null)
+  const faceModel = useRef(null)
   const scanInProgress = useRef(false)
   const galleryObjectUrls = useRef([])
 
@@ -174,13 +174,19 @@ function App() {
       import('@tensorflow/tfjs-backend-webgl'),
       import('@tensorflow/tfjs-backend-cpu'),
       import('@tensorflow-models/mobilenet'),
-    ]).then(async ([tf, , , { load }]) => {
+      import('@tensorflow-models/blazeface'),
+    ]).then(async ([tf, , , { load }, { load: loadFaceModel }]) => {
       await tf.setBackend('webgl').catch(() => tf.setBackend('cpu'))
       await tf.ready()
-      return load({ version: 2, alpha: 1.0 })
-    }).then((model) => {
+      const [model, detectedFaceModel] = await Promise.all([
+        load({ version: 2, alpha: 1.0 }),
+        loadFaceModel(),
+      ])
+      return { model, detectedFaceModel }
+    }).then(({ model, detectedFaceModel }) => {
       if (!cancelled) {
         plantModel.current = model
+        faceModel.current = detectedFaceModel
         setClassifierStatus('ready')
       }
     }).catch(() => {
@@ -366,13 +372,12 @@ function App() {
   }
 
   const validatePlantFrame = async (canvas) => {
-    if (!plantModel.current) return { accepted: false, reason: classifierStatus === 'loading' ? 'plant checker is still loading' : 'plant checker unavailable' }
+    if (!plantModel.current || !faceModel.current) return { accepted: false, reason: classifierStatus === 'loading' ? 'plant checker is still loading' : 'plant checker unavailable' }
+
+    const faces = await faceModel.current.estimateFaces(canvas, false)
+    if (faces.length > 0) return { accepted: false, reason: 'person detected · frame rejected' }
 
     const predictions = await plantModel.current.classify(canvas, 10)
-    const hasFace = predictions.some(({ className, probability }) => {
-      const label = className.toLowerCase()
-      return probability >= 0.08 && faceLabels.some((term) => label.includes(term))
-    })
     const hasPlantLabel = predictions.some(({ className, probability }) => {
       const label = className.toLowerCase()
       return probability >= 0.12 && plantLabels.some((term) => label.includes(term))
@@ -385,7 +390,6 @@ function App() {
       })
       .sort((first, second) => second.probability - first.probability)[0]
 
-    if (hasFace) return { accepted: false, reason: 'person detected · frame rejected' }
     if (!hasPlant) return { accepted: false, reason: 'plant or crop not detected' }
     return { accepted: true, plantName: formatPlantName(plantPrediction?.className || 'Plant / crop') }
   }

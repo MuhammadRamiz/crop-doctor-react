@@ -28,7 +28,7 @@ The camera service `/health` endpoint must return JSON with an explicit plant re
 }
 ```
 
-The dashboard rejects an ESP32-CAM frame when `isPlant` or `plantDetected` is not `true`, or when `containsFace` or `faceDetected` is `true`. Device-camera captures are checked locally with MobileNet and reject likely faces and non-plant images. MobileNet is a general ImageNet model, so it cannot reliably identify every crop species. Exact rose, apple, rice, or other crop identification requires a plant-specific model such as PlantNet with a backend/API key. Captures then receive a lightweight color-based visual health estimate for this college prototype. Camera and service errors are shown as rejected scans; no random diagnosis is generated.
+The dashboard rejects an ESP32-CAM frame when `isPlant` or `plantDetected` is not `true`, or when `containsFace` or `faceDetected` is `true`. Device-camera captures use MobileNet for plant/crop classification and BlazeFace for dedicated face detection before an image can enter the gallery. MobileNet is a general ImageNet model, so it cannot reliably identify every crop species. Exact rose, apple, rice, or other crop identification requires a plant-specific model such as PlantNet with a backend/API key. Captures then receive a lightweight color-based visual health estimate for this college prototype. Camera and service errors are shown as rejected scans; no random diagnosis is generated.
 
 ## Privacy
 
