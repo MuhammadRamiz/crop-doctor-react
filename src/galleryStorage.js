@@ -275,10 +275,15 @@ export const removeGalleryImage = async (id) => {
 
   try {
     console.log('🗑️ Deleting image from Supabase...', { id })
-    const { data: image, error: lookupError } = await supabase.from('scans').select('storage_path').eq('id', id).single()
+    const { data: image, error: lookupError } = await supabase.from('scans').select('id, storage_path, image_hash').eq('id', id).maybeSingle()
 
     if (lookupError) {
       throw lookupError
+    }
+
+    if (!image) {
+      console.warn('⚠️ No scan row found for delete request. Nothing to remove from Supabase.', { id })
+      return
     }
 
     const { error: deleteRowError } = await supabase.from('scans').delete().eq('id', id)
@@ -286,14 +291,19 @@ export const removeGalleryImage = async (id) => {
       throw deleteRowError
     }
 
-    if (image?.storage_path) {
-      const { error: storageError } = await supabase.storage.from(BUCKET_NAME).remove([image.storage_path])
+    const storageCandidates = [...new Set([
+      image?.storage_path,
+      image?.image_hash ? `${image.image_hash}.jpg` : null,
+    ].filter(Boolean))]
+
+    if (storageCandidates.length > 0) {
+      const { error: storageError } = await supabase.storage.from(BUCKET_NAME).remove(storageCandidates)
       if (storageError) {
         console.warn('⚠️ Error deleting from storage (non-critical):', storageError)
       }
     }
 
-    console.log('✅ Image deleted from Supabase successfully')
+    console.log('✅ Image deleted from Supabase successfully', { id, storageCandidates })
     return
   } catch (error) {
     console.error('❌ Supabase delete failed:', error)
