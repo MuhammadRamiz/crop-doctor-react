@@ -63,7 +63,7 @@ const whyItems = [
 
 const teamMembers = [
   { initials: 'D', name: 'Danish', role: 'Team Leader', dept: 'AI / Backend', image: danishPortrait },
-  { initials: 'R', name: 'Ramiz', role: 'Frontend', dept: 'Interface & UX', image: ramizPortrait },
+  { initials: 'R', name: 'Ramiz', role: 'Frontend', dept: 'ReactJS and AI/AML', image: ramizPortrait },
   { initials: 'M2', name: 'Member 2', role: 'Hardware', dept: 'ESP32-CAM Setup' },
   { initials: 'M3', name: 'Member 3', role: 'AI / ML', dept: 'Model Training' },
   { initials: 'M4', name: 'Member 4', role: 'Backend', dept: 'Server & API' },
