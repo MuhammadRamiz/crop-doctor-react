@@ -7,22 +7,45 @@ const BUCKET_NAME = 'plant-images'
 
 // Try multiple configuration sources
 const getSupabaseConfig = () => {
+  console.log('🔍 Checking configuration sources...')
+  
   // Priority 1: Environment variables (build-time)
   const envUrl = import.meta.env.VITE_SUPABASE_URL
   const envKey = import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY
   
+  console.log('🔧 Environment variables check:', { 
+    hasUrl: !!envUrl, 
+    hasKey: !!envKey,
+    urlPrefix: envUrl ? envUrl.substring(0, 20) + '...' : 'none'
+  })
+  
   if (envUrl && envKey) {
-    console.log('🔧 Using environment variables for Supabase configuration')
+    console.log('✅ Using environment variables for Supabase configuration')
     return { url: envUrl, key: envKey, source: 'environment' }
   }
   
   // Priority 2: Runtime configuration (config.js)
+  console.log('🔧 Runtime config check:', {
+    hasConfig: !!window.SUPABASE_CONFIG,
+    hasUrl: !!(window.SUPABASE_CONFIG?.url),
+    hasKey: !!(window.SUPABASE_CONFIG?.key),
+    urlPrefix: window.SUPABASE_CONFIG?.url ? window.SUPABASE_CONFIG.url.substring(0, 20) + '...' : 'none',
+    keyPrefix: window.SUPABASE_CONFIG?.key ? window.SUPABASE_CONFIG.key.substring(0, 10) + '...' : 'none'
+  })
+  
   if (window.SUPABASE_CONFIG && window.SUPABASE_CONFIG.url && window.SUPABASE_CONFIG.key) {
-    console.log('🔧 Using runtime configuration for Supabase')
+    // Check if they're still placeholder values
+    if (window.SUPABASE_CONFIG.url === 'YOUR_SUPABASE_URL_HERE' || 
+        window.SUPABASE_CONFIG.key === 'YOUR_SUPABASE_ANON_KEY_HERE') {
+      console.warn('⚠️ Runtime config contains placeholder values - not configured')
+      return { url: null, key: null, source: 'runtime-placeholder' }
+    }
+    
+    console.log('✅ Using runtime configuration for Supabase')
     return { url: window.SUPABASE_CONFIG.url, key: window.SUPABASE_CONFIG.key, source: 'runtime' }
   }
   
-  console.warn('⚠️ No Supabase configuration found')
+  console.warn('⚠️ No valid Supabase configuration found')
   return { url: null, key: null, source: 'none' }
 }
 
@@ -33,13 +56,24 @@ const supabase = config.url && config.key ? createClient(config.url, config.key)
 if (supabase) {
   console.log('✅ Supabase initialized successfully', { 
     source: config.source,
-    urlPrefix: config.url.substring(0, 20) + '...' 
+    urlPrefix: config.url.substring(0, 20) + '...',
+    clientCreated: true
+  })
+  
+  // Test connection
+  supabase.from('scans').select('count').then(({ data, error }) => {
+    if (error) {
+      console.error('❌ Supabase connection test failed:', error)
+    } else {
+      console.log('✅ Supabase connection test successful')
+    }
   })
 } else {
   console.warn('⚠️ Supabase not configured - falling back to local storage', { 
     source: config.source,
     hasUrl: !!config.url, 
-    hasKey: !!config.key 
+    hasKey: !!config.key,
+    reason: config.source === 'runtime-placeholder' ? 'Placeholder values detected' : 'Missing credentials'
   })
 }
 

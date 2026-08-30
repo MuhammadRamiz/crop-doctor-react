@@ -15,7 +15,17 @@
   </head>
   <body>
     <div id="root"></div>
-    <script src="/config.js"></script>
+    <script>
+      // Inline Supabase configuration for GitHub Pages
+      window.SUPABASE_CONFIG = {
+        url: 'https://hrdqfmrgwouuxlcwmgmp.supabase.co',
+        key: 'sb_publishable_jYBmSGghWt0LBcYpjJde9w_vHzehQaU'
+      };
+      console.log('✅ Supabase config loaded inline:', {
+        url: window.SUPABASE_CONFIG.url.substring(0, 20) + '...',
+        key: window.SUPABASE_CONFIG.key.substring(0, 10) + '...'
+      });
+    </script>
     <script type="module" src="/src/main.jsx"></script>
   </body>
 </html>
