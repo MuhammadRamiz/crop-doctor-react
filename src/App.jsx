@@ -376,7 +376,13 @@ function App() {
     if (!plantModel.current || !faceModel.current) return { accepted: false, reason: classifierStatus === 'loading' ? 'plant checker is still loading' : 'plant checker unavailable' }
 
     const faces = await faceModel.current.estimateFaces(canvas, false)
-    if (faces.length > 0) return { accepted: false, reason: 'person detected · frame rejected' }
+    const confidentFace = faces.some((face) => {
+      const probability = typeof face.probability?.dataSync === 'function'
+        ? face.probability.dataSync()[0]
+        : face.probability
+      return probability >= 0.9
+    })
+    if (confidentFace) return { accepted: false, reason: 'person detected · frame rejected' }
 
     const predictions = await plantModel.current.classify(canvas, 10)
     const hasPlantLabel = predictions.some(({ className, probability }) => {
