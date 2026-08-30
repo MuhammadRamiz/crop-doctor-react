@@ -62,6 +62,8 @@ const teamMembers = [
 ]
 
 const builtWith = ['ESP32-CAM', 'Python', 'Flask', 'AI / ML', 'HTML/CSS/JS']
+const plantLabels = ['plant', 'leaf', 'tree', 'flower', 'vegetable', 'fruit', 'corn', 'broccoli', 'cauliflower', 'cucumber', 'zucchini', 'squash', 'pepper', 'potato', 'banana', 'pineapple', 'strawberry', 'orange', 'lemon', 'fig', 'vine', 'greenhouse', 'daisy', 'rose', 'sunflower']
+const faceLabels = ['person', 'face', 'man', 'woman', 'boy', 'girl', 'head', 'human']
 
 const defaultDemoLeaf = (() => {
   return 'data:image/svg+xml;utf8,' + encodeURIComponent(`
@@ -78,6 +80,7 @@ function App() {
   const [deviceIP, setDeviceIP] = useState('')
   const [connected, setConnected] = useState(false)
   const [deviceCameraActive, setDeviceCameraActive] = useState(false)
+  const [classifierStatus, setClassifierStatus] = useState('loading')
   const [scanCount, setScanCount] = useState(0)
   const [feedImage, setFeedImage] = useState(defaultDemoLeaf)
   const [mobileOpen, setMobileOpen] = useState(false)
@@ -94,6 +97,7 @@ function App() {
   const [shutterDisabled, setShutterDisabled] = useState(true)
   const videoRef = useRef(null)
   const deviceCameraStream = useRef(null)
+  const plantModel = useRef(null)
 
   const STREAM_PATH = (ip) => `http://${ip}:81/stream`
   const CAPTURE_PATH = (ip) => `http://${ip}/capture`
@@ -119,6 +123,23 @@ function App() {
       video.srcObject = null
     }
   }, [deviceCameraActive])
+
+  useEffect(() => {
+    let cancelled = false
+
+    import('@tensorflow-models/mobilenet').then(({ load }) => load({ version: 2, alpha: 1.0 })).then((model) => {
+      if (!cancelled) {
+        plantModel.current = model
+        setClassifierStatus('ready')
+      }
+    }).catch(() => {
+      if (!cancelled) setClassifierStatus('unavailable')
+    })
+
+    return () => {
+      cancelled = true
+    }
+  }, [])
 
   const setConnectedState = (nextConnected, ip = deviceIP) => {
     setConnected(nextConnected)
@@ -199,7 +220,25 @@ function App() {
     setConnectedState(false)
   }
 
-  const captureDeviceFrame = () => {
+  const validatePlantFrame = async (canvas) => {
+    if (!plantModel.current) return { accepted: false, reason: classifierStatus === 'loading' ? 'plant checker is still loading' : 'plant checker unavailable' }
+
+    const predictions = await plantModel.current.classify(canvas, 5)
+    const hasFace = predictions.some(({ className, probability }) => {
+      const label = className.toLowerCase()
+      return probability >= 0.08 && faceLabels.some((term) => label.includes(term))
+    })
+    const hasPlant = predictions.some(({ className, probability }) => {
+      const label = className.toLowerCase()
+      return probability >= 0.12 && plantLabels.some((term) => label.includes(term))
+    })
+
+    if (hasFace) return { accepted: false, reason: 'person detected · frame rejected' }
+    if (!hasPlant) return { accepted: false, reason: 'plant or crop not detected' }
+    return { accepted: true }
+  }
+
+  const captureDeviceFrame = async () => {
     const video = videoRef.current
     if (!video?.videoWidth || !video.videoHeight) {
       rejectFrame('camera is still starting')
@@ -210,6 +249,22 @@ function App() {
     canvas.width = video.videoWidth
     canvas.height = video.videoHeight
     canvas.getContext('2d').drawImage(video, 0, 0)
+
+    setShutterDisabled(true)
+    setReadoutLeft('checking plant image…')
+    setReadoutRight('AI validation')
+    let validation
+    try {
+      validation = await validatePlantFrame(canvas)
+    } catch {
+      rejectFrame('plant checker unavailable')
+      return
+    }
+    if (!validation.accepted) {
+      rejectFrame(validation.reason)
+      return
+    }
+
     canvas.toBlob((blob) => {
       if (!blob) {
         rejectFrame('could not capture camera frame')
@@ -218,7 +273,7 @@ function App() {
       setFeedImage(URL.createObjectURL(blob))
       setStampVisible(false)
       setShutterDisabled(false)
-      setReadoutLeft('crop captured · health model not connected')
+      setReadoutLeft('plant captured · health model not connected')
       setReadoutRight('image ready')
       setHintText('connect a crop-health API to diagnose this captured image')
     }, 'image/jpeg', 0.9)
@@ -428,8 +483,8 @@ function App() {
                   </span>
                 </div>
                 <div className="status-row">
-                  <span>AI model</span>
-                  <span className="status-flag on"><span className="dot" />Ready</span>
+                  <span>Plant checker</span>
+                  <span className={`status-flag ${classifierStatus === 'ready' ? 'on' : 'off'}`}><span className="dot" />{classifierStatus === 'ready' ? 'Ready' : 'Loading'}</span>
                 </div>
                 <div className="status-row">
                   <span>Network</span>
