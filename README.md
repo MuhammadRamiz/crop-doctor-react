@@ -40,6 +40,32 @@ Accepted captures are saved as image blobs in the visitor's browser using Indexe
 
 Selecting a thumbnail restores its image, result, confidence, and care plan in the scanner view. Saved scans also repopulate Recent results after a page reload. Identical image files are detected by content hash and are not added to the gallery more than once.
 
+When Supabase is configured, the gallery uses the shared `plant-images` Storage bucket and `scans` table. Create a public bucket with that name, then run this migration in Supabase SQL Editor:
+
+```sql
+alter table public.scans
+	add column if not exists image_hash text,
+	add column if not exists storage_path text;
+
+create unique index if not exists scans_image_hash_key
+	on public.scans (image_hash)
+	where image_hash is not null;
+```
+
+For the public demo, create the `plant-images` bucket as public and add these Storage policies:
+
+```sql
+create policy "Anyone can upload plant images"
+on storage.objects for insert to anon, authenticated
+with check (bucket_id = 'plant-images');
+
+create policy "Anyone can delete plant images"
+on storage.objects for delete to anon, authenticated
+using (bucket_id = 'plant-images');
+```
+
+The frontend uses the Supabase publishable key only. Never put a service-role key in `.env.production` or the browser.
+
 ## GitHub Pages
 
 The published site is available at:
