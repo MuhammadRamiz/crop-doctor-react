@@ -75,10 +75,11 @@ const MAX_IMAGE_SIZE = 10 * 1024 * 1024
 const SUPPORTED_IMAGE_TYPES = ['image/jpeg', 'image/png', 'image/webp']
 const plantLabels = ['plant', 'leaf', 'tree', 'flower', 'vegetable', 'fruit', 'corn', 'broccoli', 'cauliflower', 'cucumber', 'zucchini', 'squash', 'pepper', 'potato', 'banana', 'pineapple', 'strawberry', 'orange', 'lemon', 'fig', 'vine', 'greenhouse', 'daisy', 'rose', 'sunflower']
 const faceLabels = ['person', 'face', 'man', 'woman', 'boy', 'girl', 'head', 'human']
+const genericPlantLabels = ['plant', 'leaf', 'tree', 'flower', 'vegetable', 'fruit', 'hip', 'pot', 'flowerpot', 'vine', 'greenhouse', 'shrub', 'bush']
 
 const formatPlantName = (className) => {
   const name = className.split(',')[0].trim()
-  if (['pot', 'flowerpot', 'greenhouse', 'vine'].includes(name.toLowerCase())) return 'Plant / crop'
+  if (genericPlantLabels.includes(name.toLowerCase())) return 'Plant / crop'
   return name.replace(/\b\w/g, (letter) => letter.toUpperCase())
 }
 
@@ -359,7 +360,10 @@ function App() {
       return probability >= 0.12 && plantLabels.some((term) => label.includes(term))
     })
     const plantPrediction = predictions
-      .filter(({ className, probability }) => probability >= 0.12 && plantLabels.some((term) => className.toLowerCase().includes(term)))
+      .filter(({ className, probability }) => {
+        const label = className.toLowerCase()
+        return probability >= 0.12 && plantLabels.some((term) => label.includes(term)) && !genericPlantLabels.includes(label.split(',')[0].trim())
+      })
       .sort((first, second) => second.probability - first.probability)[0]
 
     if (hasFace) return { accepted: false, reason: 'person detected · frame rejected' }

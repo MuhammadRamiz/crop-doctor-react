@@ -13,7 +13,7 @@ Open the local URL shown by Vite. Connect the dashboard to the ESP32-CAM IP addr
 
 Visitors can use **Use this device camera** on the HTTPS GitHub Pages site. The browser will ask for camera permission and prefer the rear camera on mobile devices. Visitors can also choose one or more existing plant images with **Choose plant image**. Selected images use the same plant-only validation, health screening, care plan, and gallery workflow. The first device scan downloads the plant checker model and may take a few seconds. The ESP32-CAM option is intended for a device on the same local network.
 
-Uploaded files must be JPG, PNG, or WebP images smaller than 10 MB, and the plant checker must recognize the image as a plant or crop. Other images are rejected before they enter the gallery.
+Uploaded files must be JPG, PNG, or WebP images smaller than 10 MB, and the plant checker must recognize the image as a plant or crop. Other images are rejected before they enter the gallery. Generic labels such as `Hip`, `Tree`, `Fruit`, `Pot`, and `Plant` are not shown as exact crop names; the gallery uses `Plant / crop` when the general model cannot identify a species reliably.
 
 ## Image validation contract
 
@@ -28,7 +28,7 @@ The camera service `/health` endpoint must return JSON with an explicit plant re
 }
 ```
 
-The dashboard rejects an ESP32-CAM frame when `isPlant` or `plantDetected` is not `true`, or when `containsFace` or `faceDetected` is `true`. Device-camera captures are checked locally with MobileNet and reject likely faces and non-plant images. They then receive a lightweight color-based visual health estimate for this college prototype. Camera and service errors are shown as rejected scans; no random diagnosis is generated. A trained crop-health model/API is still recommended for reliable agricultural diagnosis.
+The dashboard rejects an ESP32-CAM frame when `isPlant` or `plantDetected` is not `true`, or when `containsFace` or `faceDetected` is `true`. Device-camera captures are checked locally with MobileNet and reject likely faces and non-plant images. MobileNet is a general ImageNet model, so it cannot reliably identify every crop species. Exact rose, apple, rice, or other crop identification requires a plant-specific model such as PlantNet with a backend/API key. Captures then receive a lightweight color-based visual health estimate for this college prototype. Camera and service errors are shown as rejected scans; no random diagnosis is generated.
 
 ## Privacy
 
