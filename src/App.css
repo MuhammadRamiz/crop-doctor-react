@@ -717,6 +717,7 @@ nav {
 .gallery-item img { width: 100%; aspect-ratio: 1; object-fit: cover; display: block; }
 .gallery-meta { display: flex; align-items: center; justify-content: space-between; gap: 4px; padding: 6px; }
 .gallery-meta .tag { margin: 0; font-size: 0.58rem; }
+.gallery-confidence { margin-top: 3px; color: var(--mist-dim); font-family: 'IBM Plex Mono', monospace; font-size: 0.58rem; }
 .delete-image { display: grid; place-items: center; width: 26px; height: 26px; padding: 0; border: 0; border-radius: 6px; color: var(--mist-dim); background: transparent; cursor: pointer; }
 .delete-image:hover { color: #f39d79; background: rgba(193, 87, 46, 0.12); }
 .delete-image svg { width: 15px; height: 15px; }

@@ -442,6 +442,9 @@ function App() {
         const validation = await validatePlantFrame(canvas)
         if (!validation.accepted) {
           URL.revokeObjectURL(previewUrl)
+          setUploadError(validation.reason === 'plant or crop not detected'
+            ? 'Only clear plant or crop images are supported.'
+            : validation.reason)
           rejectFrame(validation.reason)
           return
         }
@@ -742,7 +745,10 @@ function App() {
                       >
                         <img src={image.url} alt={`Captured ${image.status === 'healthy' ? 'healthy' : 'at-risk'} plant`} />
                         <div className="gallery-meta">
-                          <span className={`tag ${image.status}`}>{image.status === 'healthy' ? 'Healthy' : 'At Risk'}</span>
+                          <div>
+                            <span className={`tag ${image.status}`}>{image.status === 'healthy' ? 'Healthy' : 'At Risk'}</span>
+                            <div className="gallery-confidence">{image.confidence}% confidence</div>
+                          </div>
                           <button type="button" className="delete-image" title="Delete image" aria-label="Delete image" onClick={(event) => {
                             event.stopPropagation()
                             deleteGalleryImage(image)
