@@ -683,6 +683,9 @@ nav {
   padding: 16px 18px;
 }
 
+.recommendation-box.empty { background: rgba(255, 255, 255, 0.03); }
+.recommendation-box p { margin: 0; color: var(--mist-dim); font-size: 0.84rem; }
+
 .recommendation-box ul {
   margin: 0;
   padding-left: 18px;

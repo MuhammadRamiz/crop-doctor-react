@@ -562,6 +562,19 @@ function App() {
                 </div>
               </div>
 
+              <div className={`recommendation-box ${recommendations.length === 0 ? 'empty' : ''}`}>
+                <div className="log-head">Plant care plan</div>
+                {recommendations.length === 0 ? (
+                  <p>Complete a plant scan to receive care recommendations based on its result.</p>
+                ) : (
+                  <ul>
+                    {recommendations.map((recommendation) => (
+                      <li key={recommendation}>{recommendation}</li>
+                    ))}
+                  </ul>
+                )}
+              </div>
+
               <div className="log-box">
                 <div className="log-head">Recent results</div>
                 <div className="log-grid" id="logGrid">
@@ -581,16 +594,6 @@ function App() {
                 </div>
               </div>
 
-              {recommendations.length > 0 && (
-                <div className="recommendation-box">
-                  <div className="log-head">Care recommendations</div>
-                  <ul>
-                    {recommendations.map((recommendation) => (
-                      <li key={recommendation}>{recommendation}</li>
-                    ))}
-                  </ul>
-                </div>
-              )}
             </div>
           </div>
         </section>
