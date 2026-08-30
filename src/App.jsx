@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from 'react'
 import { getGalleryImages, removeGalleryImage, saveGalleryImage } from './galleryStorage'
+import { trackEvent } from './analytics.js'
 import danishPortrait from './assets/danish.jpeg'
 import ramizPortrait from './assets/ramiz.jpeg'
 import './App.css'
@@ -574,6 +575,7 @@ function App() {
       setShutterDisabled(false)
       setLastScan(`${confidence}%`)
       setRecommendations(getCropRecommendations(isHealthy, plantName))
+      trackEvent('plant_scan_completed', { status: isHealthy ? 'healthy' : 'at_risk', plant_name: plantName })
       logScan(isHealthy, confidence)
     }, 1000)
   }

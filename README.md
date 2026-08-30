@@ -44,13 +44,23 @@ Selecting a thumbnail restores its image, result, confidence, and care plan in t
 
 The published site is available at:
 
- https://kaleemullah19.github.io/crop-doctor-react/
+https://kaleemullah19.github.io/crop-doctor-react/
 
 To publish a new build:
 
- ```bash
- npm run deploy
 ```bash
+npm run deploy
+```
+ 
+## Analytics
+
+The project supports free Google Analytics 4 with privacy-conscious event tracking. It records page views and completed plant scans, but never sends camera frames or gallery images.
+
+1. Create a GA4 web data stream and copy its Measurement ID, such as `G-ABC123XYZ`.
+2. Copy `.env.example` to `.env.local` and set `VITE_GA_MEASUREMENT_ID`.
+3. Run `npm run deploy` with that environment variable available during the build.
+
+Without a Measurement ID, analytics stays disabled automatically.
 npm run deploy
 ```
 - [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/)
