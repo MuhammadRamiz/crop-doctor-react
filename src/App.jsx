@@ -217,8 +217,10 @@ function App() {
       galleryObjectUrls.current.push(url)
       setGallery((previous) => [{ ...image, url }, ...previous])
       setSelectedGalleryImageId(image.id)
+      return { ...image, url }
     } catch {
       setHintText('image captured · browser storage unavailable')
+      return null
     }
   }
 
@@ -431,68 +433,78 @@ function App() {
     }, 'image/jpeg', 0.9)
   }
 
-  const handleImageSelect = (event) => {
-    const file = event.target.files?.[0]
-    event.target.value = ''
-    if (!file) return
+  const processSelectedImage = async (file) => {
     if (!SUPPORTED_IMAGE_TYPES.includes(file.type)) {
-      setUploadError('Unsupported format. Choose a JPG, PNG, or WebP image.')
-      rejectFrame('unsupported image format')
-      setHintText('choose a JPG, PNG, or WebP image')
-      return
+      return { error: 'Unsupported format. Choose a JPG, PNG, or WebP image.' }
     }
     if (file.size > MAX_IMAGE_SIZE) {
-      setUploadError('Image is too large. Choose a file smaller than 10 MB.')
-      rejectFrame('image is too large')
-      setHintText('choose an image smaller than 10 MB')
-      return
+      return { error: 'Image is too large. Choose a file smaller than 10 MB.' }
     }
-    if (scanInProgress.current) return
 
-    setUploadError('')
-    scanInProgress.current = true
-    setShutterDisabled(true)
-    setStampVisible(false)
-    setReadoutLeft('checking selected image…')
-    setReadoutRight('AI validation')
     const previewUrl = URL.createObjectURL(file)
-    const image = new Image()
-    image.onload = async () => {
+    try {
+      const image = await new Promise((resolve, reject) => {
+        const imageElement = new Image()
+        imageElement.onload = () => resolve(imageElement)
+        imageElement.onerror = () => reject(new Error('image read error'))
+        imageElement.src = previewUrl
+      })
       const scale = Math.min(1, 1280 / Math.max(image.naturalWidth, image.naturalHeight))
       const canvas = document.createElement('canvas')
       canvas.width = Math.round(image.naturalWidth * scale)
       canvas.height = Math.round(image.naturalHeight * scale)
       canvas.getContext('2d').drawImage(image, 0, 0, canvas.width, canvas.height)
 
-      try {
-        const validation = await validatePlantFrame(canvas)
-        if (!validation.accepted) {
-          URL.revokeObjectURL(previewUrl)
-          setUploadError(validation.reason === 'plant or crop not detected'
-            ? 'Only clear plant or crop images are supported.'
-            : validation.reason)
-          rejectFrame(validation.reason)
-          return
-        }
-
-        const result = estimatePlantHealth(canvas)
-        galleryObjectUrls.current.push(previewUrl)
-        setFeedImage(previewUrl)
-        setReadoutLeft('visual health screening complete')
-        setReadoutRight('local estimate')
-        setHintText('for research use: confirm results with an agronomist or trained model')
-        void addGalleryImage(file, { source: 'device gallery', plantName: validation.plantName, status: result.isHealthy ? 'healthy' : 'risk', confidence: result.confidence })
-        showResult(result.isHealthy, result.confidence, validation.plantName)
-      } catch {
-        URL.revokeObjectURL(previewUrl)
-        rejectFrame('plant checker unavailable')
+      const validation = await validatePlantFrame(canvas)
+      if (!validation.accepted) {
+        return { error: validation.reason === 'plant or crop not detected' ? 'Only clear plant or crop images are supported.' : validation.reason }
       }
-    }
-    image.onerror = () => {
+
+      const result = estimatePlantHealth(canvas)
+      const imageRecord = await addGalleryImage(file, {
+        source: 'device gallery',
+        plantName: validation.plantName,
+        status: result.isHealthy ? 'healthy' : 'risk',
+        confidence: result.confidence,
+      })
+      return imageRecord ? { image: imageRecord, result, plantName: validation.plantName } : { error: 'could not save selected image' }
+    } catch {
+      return { error: 'plant checker unavailable' }
+    } finally {
       URL.revokeObjectURL(previewUrl)
-      rejectFrame('could not read selected image')
     }
-    image.src = previewUrl
+  }
+
+  const handleImageSelect = async (event) => {
+    const files = Array.from(event.target.files || [])
+    event.target.value = ''
+    if (files.length === 0) return
+    if (scanInProgress.current) return
+
+    setUploadError('')
+    scanInProgress.current = true
+    setShutterDisabled(true)
+    setStampVisible(false)
+    const results = []
+    for (const [index, file] of files.entries()) {
+      setReadoutLeft(`checking image ${index + 1} of ${files.length}…`)
+      setReadoutRight('AI validation')
+      const result = await processSelectedImage(file)
+      if (result.image) results.push(result)
+      if (result.error) setUploadError((current) => current ? `${current} ${result.error}` : result.error)
+    }
+
+    const lastResult = results[results.length - 1]
+    if (!lastResult) {
+      rejectFrame('no supported plant images selected')
+      return
+    }
+
+    setFeedImage(lastResult.image.url)
+    setReadoutLeft(`${results.length} plant image${results.length === 1 ? '' : 's'} added`)
+    setReadoutRight('visual health score')
+    setHintText('screening estimate only: confirm results with an agronomist or trained model')
+    showResult(lastResult.result.isHealthy, lastResult.result.confidence, lastResult.plantName)
   }
 
   const logScan = (isHealthy, confidence) => {
@@ -686,7 +698,7 @@ function App() {
                   )}
                 </div>
                 <div className="upload-row">
-                  <input ref={fileInputRef} className="file-input" type="file" accept="image/*" onChange={handleImageSelect} />
+                  <input ref={fileInputRef} className="file-input" type="file" accept="image/*" multiple onChange={handleImageSelect} />
                   <button type="button" className="btn btn-upload" onClick={() => fileInputRef.current?.click()}>
                     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
                       <path d="M12 16V4M7 9l5-5 5 5M5 20h14" />
