@@ -100,6 +100,7 @@ function App() {
   const [selectedGalleryImageId, setSelectedGalleryImageId] = useState(null)
   const [shutterDisabled, setShutterDisabled] = useState(true)
   const videoRef = useRef(null)
+  const fileInputRef = useRef(null)
   const deviceCameraStream = useRef(null)
   const plantModel = useRef(null)
   const scanInProgress = useRef(false)
@@ -401,6 +402,58 @@ function App() {
     }, 'image/jpeg', 0.9)
   }
 
+  const handleImageSelect = (event) => {
+    const file = event.target.files?.[0]
+    event.target.value = ''
+    if (!file) return
+    if (!file.type.startsWith('image/')) {
+      rejectFrame('please select an image file')
+      return
+    }
+    if (scanInProgress.current) return
+
+    scanInProgress.current = true
+    setShutterDisabled(true)
+    setStampVisible(false)
+    setReadoutLeft('checking selected image…')
+    setReadoutRight('AI validation')
+    const previewUrl = URL.createObjectURL(file)
+    const image = new Image()
+    image.onload = async () => {
+      const scale = Math.min(1, 1280 / Math.max(image.naturalWidth, image.naturalHeight))
+      const canvas = document.createElement('canvas')
+      canvas.width = Math.round(image.naturalWidth * scale)
+      canvas.height = Math.round(image.naturalHeight * scale)
+      canvas.getContext('2d').drawImage(image, 0, 0, canvas.width, canvas.height)
+
+      try {
+        const validation = await validatePlantFrame(canvas)
+        if (!validation.accepted) {
+          URL.revokeObjectURL(previewUrl)
+          rejectFrame(validation.reason)
+          return
+        }
+
+        const result = estimatePlantHealth(canvas)
+        galleryObjectUrls.current.push(previewUrl)
+        setFeedImage(previewUrl)
+        setReadoutLeft('visual health screening complete')
+        setReadoutRight('local estimate')
+        setHintText('for research use: confirm results with an agronomist or trained model')
+        void addGalleryImage(file, { source: 'device gallery', status: result.isHealthy ? 'healthy' : 'risk', confidence: result.confidence })
+        showResult(result.isHealthy, result.confidence)
+      } catch {
+        URL.revokeObjectURL(previewUrl)
+        rejectFrame('plant checker unavailable')
+      }
+    }
+    image.onerror = () => {
+      URL.revokeObjectURL(previewUrl)
+      rejectFrame('could not read selected image')
+    }
+    image.src = previewUrl
+  }
+
   const logScan = (isHealthy, confidence) => {
     const time = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
     const entry = {
@@ -587,6 +640,15 @@ function App() {
                   ) : (
                     <button type="button" className="btn btn-secondary" onClick={startDeviceCamera}>Use this device camera</button>
                   )}
+                </div>
+                <div className="upload-row">
+                  <input ref={fileInputRef} className="file-input" type="file" accept="image/*" onChange={handleImageSelect} />
+                  <button type="button" className="btn btn-upload" onClick={() => fileInputRef.current?.click()}>
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                      <path d="M12 16V4M7 9l5-5 5 5M5 20h14" />
+                    </svg>
+                    Choose plant image
+                  </button>
                 </div>
                 <div className="shutter-row">
                   <button type="button" className="shutter-btn" id="shutterBtn" disabled={shutterDisabled} onClick={runDiagnosis} aria-label="Scan plant">
