@@ -11,6 +11,8 @@ npm run dev
 
 Open the local URL shown by Vite. Connect the dashboard to the ESP32-CAM IP address, then use the shutter to scan.
 
+Visitors can use **Use this device camera** on the HTTPS GitHub Pages site. The browser will ask for camera permission and prefer the rear camera on mobile devices. The ESP32-CAM option is intended for a device on the same local network.
+
 ## Image validation contract
 
 The camera service `/health` endpoint must return JSON with an explicit plant result:
@@ -24,7 +26,7 @@ The camera service `/health` endpoint must return JSON with an explicit plant re
 }
 ```
 
-The dashboard rejects a frame when `isPlant` or `plantDetected` is not `true`, or when `containsFace` or `faceDetected` is `true`. Camera and service errors are shown as rejected scans; no demo diagnosis is generated.
+The dashboard rejects an ESP32-CAM frame when `isPlant` or `plantDetected` is not `true`, or when `containsFace` or `faceDetected` is `true`. Camera and service errors are shown as rejected scans; no demo diagnosis is generated. Browser-camera captures currently require a connected crop-health model/API for diagnosis; the image capture itself works without the ESP32-CAM.
 
 ## GitHub Pages
 

@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import './App.css'
 
 const navItems = ['Overview', 'How it works', 'Benefits', 'Team', 'Contact']
@@ -77,6 +77,7 @@ const defaultDemoLeaf = (() => {
 function App() {
   const [deviceIP, setDeviceIP] = useState('')
   const [connected, setConnected] = useState(false)
+  const [deviceCameraActive, setDeviceCameraActive] = useState(false)
   const [scanCount, setScanCount] = useState(0)
   const [feedImage, setFeedImage] = useState(defaultDemoLeaf)
   const [mobileOpen, setMobileOpen] = useState(false)
@@ -91,10 +92,16 @@ function App() {
   const [lastScan, setLastScan] = useState('0%')
   const [logs, setLogs] = useState([])
   const [shutterDisabled, setShutterDisabled] = useState(true)
+  const videoRef = useRef(null)
+  const deviceCameraStream = useRef(null)
 
   const STREAM_PATH = (ip) => `http://${ip}:81/stream`
   const CAPTURE_PATH = (ip) => `http://${ip}/capture`
   const HEALTH_PATH = (ip) => `http://${ip}/health`
+
+  useEffect(() => () => {
+    deviceCameraStream.current?.getTracks().forEach((track) => track.stop())
+  }, [])
 
   const setConnectedState = (nextConnected, ip = deviceIP) => {
     setConnected(nextConnected)
@@ -145,6 +152,64 @@ function App() {
     }
   }
 
+  const startDeviceCamera = async () => {
+    if (!navigator.mediaDevices?.getUserMedia) {
+      setReadoutLeft('browser camera is not supported')
+      setReadoutRight('use a modern browser')
+      return
+    }
+
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({
+        video: { facingMode: { ideal: 'environment' } },
+        audio: false,
+      })
+      deviceCameraStream.current = stream
+      setDeviceCameraActive(true)
+      setConnectedState(true, 'device camera')
+      setHintText('aim at one clear plant or crop, then press the shutter')
+      setTimeout(() => {
+        if (videoRef.current) videoRef.current.srcObject = stream
+      }, 0)
+    } catch {
+      setReadoutLeft('camera permission denied')
+      setReadoutRight('allow camera access')
+      setHintText('camera access is required to capture a crop')
+    }
+  }
+
+  const stopDeviceCamera = () => {
+    deviceCameraStream.current?.getTracks().forEach((track) => track.stop())
+    deviceCameraStream.current = null
+    setDeviceCameraActive(false)
+    setConnectedState(false)
+  }
+
+  const captureDeviceFrame = () => {
+    const video = videoRef.current
+    if (!video?.videoWidth || !video.videoHeight) {
+      rejectFrame('camera is still starting')
+      return
+    }
+
+    const canvas = document.createElement('canvas')
+    canvas.width = video.videoWidth
+    canvas.height = video.videoHeight
+    canvas.getContext('2d').drawImage(video, 0, 0)
+    canvas.toBlob((blob) => {
+      if (!blob) {
+        rejectFrame('could not capture camera frame')
+        return
+      }
+      setFeedImage(URL.createObjectURL(blob))
+      setStampVisible(false)
+      setShutterDisabled(false)
+      setReadoutLeft('crop captured · health model not connected')
+      setReadoutRight('image ready')
+      setHintText('connect a crop-health API to diagnose this captured image')
+    }, 'image/jpeg', 0.9)
+  }
+
   const logScan = (isHealthy, confidence) => {
     const time = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
     const entry = {
@@ -180,6 +245,11 @@ function App() {
 
   const runDiagnosis = () => {
     if (!connected || shutterDisabled) return
+
+    if (deviceCameraActive) {
+      captureDeviceFrame()
+      return
+    }
 
     setShutterDisabled(true)
     setStampVisible(false)
@@ -297,7 +367,11 @@ function App() {
                   <span className="bracket bl" />
                   <span className="bracket br" />
                   <div className="sweep" />
-                  <img id="feedImg" src={feedImage} alt="Plant camera feed" />
+                  {deviceCameraActive ? (
+                    <video ref={videoRef} className="device-video" autoPlay playsInline muted aria-label="Device camera preview" />
+                  ) : (
+                    <img id="feedImg" src={feedImage} alt="Plant camera feed" />
+                  )}
                 </div>
                 <div className={`stamp ${stampKind}`} style={{ opacity: stampVisible ? 1 : 0 }}>
                   {stampText}
@@ -309,6 +383,13 @@ function App() {
                 <div className="connect-row">
                   <input id="ipInput" className="ip-input" type="text" placeholder="Enter camera IP, e.g. 192.168.2.50" />
                   <button type="button" className="btn btn-primary" id="connectBtn" onClick={handleConnect}>Connect</button>
+                </div>
+                <div className="device-camera-row">
+                  {deviceCameraActive ? (
+                    <button type="button" className="btn btn-secondary" onClick={stopDeviceCamera}>Stop device camera</button>
+                  ) : (
+                    <button type="button" className="btn btn-secondary" onClick={startDeviceCamera}>Use this device camera</button>
+                  )}
                 </div>
                 <div className="shutter-row">
                   <button type="button" className="shutter-btn" id="shutterBtn" disabled={shutterDisabled} onClick={runDiagnosis} aria-label="Scan plant">
