@@ -78,9 +78,25 @@ const plantLabels = [
   'plant', 'leaf', 'tree', 'flower', 'vegetable', 'fruit', 'corn', 'broccoli', 'cauliflower', 'cucumber',
   'zucchini', 'squash', 'pepper', 'potato', 'banana', 'pineapple', 'strawberry', 'orange', 'lemon', 'fig',
   'vine', 'greenhouse', 'daisy', 'rose', 'sunflower', 'cactus', 'succulent', 'aloe', 'agave', 'jade', 'fern',
-  'palm', 'orchid', 'monstera', 'bamboo', 'ivy', 'spider plant', 'prickly pear', 'bonsai', 'herb', 'bush', 'shrub'
+  'palm', 'orchid', 'monstera', 'bamboo', 'ivy', 'spider plant', 'prickly pear', 'bonsai', 'herb', 'bush', 'shrub',
+  'tree trunk', 'grass', 'grape', 'olive', 'pepper plant', 'tomato', 'tomato plant', 'rose bush', 'cane', 'berry'
 ]
-const genericPlantLabels = ['plant', 'leaf', 'tree', 'flower', 'vegetable', 'fruit', 'hip', 'pot', 'flowerpot', 'vine', 'greenhouse', 'shrub', 'bush', 'bushes']
+const genericPlantLabels = ['plant', 'leaf', 'tree', 'flower', 'vegetable', 'fruit', 'hip', 'pot', 'flowerpot', 'vine', 'greenhouse', 'shrub', 'bush', 'bushes', 'grass', 'grass family']
+const recognizedPlantNames = [
+  { keywords: ['cactus', 'succulent', 'echeveria', 'prickly pear', 'aloe', 'agave', 'jade'], label: 'Cactus' },
+  { keywords: ['palm', 'palm tree', 'date palm', 'coconut palm'], label: 'Palm tree' },
+  { keywords: ['rose', 'rose bush', 'flower', 'daisy'], label: 'Flower' },
+  { keywords: ['corn', 'maize', 'sweet corn'], label: 'Corn' },
+  { keywords: ['banana', 'banana plant', 'banana tree'], label: 'Banana' },
+  { keywords: ['tomato', 'tomato plant'], label: 'Tomato' },
+  { keywords: ['pepper', 'pepper plant'], label: 'Pepper' },
+  { keywords: ['fern', 'fern plant'], label: 'Fern' },
+  { keywords: ['fig', 'fig tree', 'ficus'], label: 'Fig' },
+  { keywords: ['olive', 'olive tree'], label: 'Olive' },
+  { keywords: ['orange', 'orange tree'], label: 'Orange' },
+  { keywords: ['grape', 'grapevine', 'grape vine'], label: 'Grapevine' },
+  { keywords: ['tree', 'pine', 'oak', 'birch', 'maple', 'spruce'], label: 'Tree' },
+]
 
 const formatPlantName = (className) => {
   const rawName = (className || '').split(',')[0].trim()
@@ -88,6 +104,10 @@ const formatPlantName = (className) => {
   if (!name) return 'Plant / crop'
   const normalized = name.toLowerCase()
   if (genericPlantLabels.includes(normalized)) return 'Plant / crop'
+
+  const mapped = recognizedPlantNames.find(({ keywords }) => keywords.some((keyword) => normalized.includes(keyword)))
+  if (mapped) return mapped.label
+
   return name.split(' ').map((word) => word ? word.charAt(0).toUpperCase() + word.slice(1) : word).join(' ')
 }
 
@@ -444,7 +464,9 @@ function App() {
       .sort((first, second) => second.probability - first.probability)[0]
 
     if (!hasPlant) return { accepted: false, reason: 'plant or crop not detected' }
-    return { accepted: true, plantName: formatPlantName(plantPrediction?.className || fallbackPrediction?.className || 'Plant / crop') }
+
+    const resolvedPrediction = plantPrediction || fallbackPrediction || predictions[0]
+    return { accepted: true, plantName: formatPlantName(resolvedPrediction?.className || 'Plant / crop') }
   }
 
   const estimatePlantHealth = (canvas) => {
