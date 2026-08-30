@@ -32,6 +32,10 @@ The dashboard rejects an ESP32-CAM frame when `isPlant` or `plantDetected` is no
 
 Crop Doctor only checks whether a face appears in a frame so that people are not analyzed as crops. It does not infer or display age, gender, identity, or mood, and device-camera frames are processed locally in the browser rather than uploaded by this app.
 
+## Plant gallery
+
+Accepted captures are saved as image blobs in the visitor's browser using IndexedDB. They appear as thumbnails in the Plant gallery and can be deleted individually. Because GitHub Pages is a static host, each visitor has a private gallery on their own device; a shared gallery would require a server database and image storage.
+
 ## GitHub Pages
 
 The published site is available at:

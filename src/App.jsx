@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from 'react'
+import { getGalleryImages, removeGalleryImage, saveGalleryImage } from './galleryStorage'
 import './App.css'
 
 const navItems = ['Overview', 'How it works', 'Benefits', 'Team', 'Contact']
@@ -95,11 +96,13 @@ function App() {
   const [lastScan, setLastScan] = useState('0%')
   const [logs, setLogs] = useState([])
   const [recommendations, setRecommendations] = useState([])
+  const [gallery, setGallery] = useState([])
   const [shutterDisabled, setShutterDisabled] = useState(true)
   const videoRef = useRef(null)
   const deviceCameraStream = useRef(null)
   const plantModel = useRef(null)
   const scanInProgress = useRef(false)
+  const galleryObjectUrls = useRef([])
 
   const STREAM_PATH = (ip) => `http://${ip}:81/stream`
   const CAPTURE_PATH = (ip) => `http://${ip}/capture`
@@ -152,6 +155,25 @@ function App() {
     }
   }, [])
 
+  useEffect(() => {
+    let active = true
+    const objectUrls = galleryObjectUrls.current
+    getGalleryImages().then((images) => {
+      if (!active) return
+      const items = images.map((image) => {
+        const url = URL.createObjectURL(image.blob)
+        objectUrls.push(url)
+        return { ...image, url }
+      })
+      setGallery(items)
+    }).catch(() => {})
+
+    return () => {
+      active = false
+      objectUrls.forEach((url) => URL.revokeObjectURL(url))
+    }
+  }, [])
+
   const setConnectedState = (nextConnected, ip = deviceIP) => {
     setConnected(nextConnected)
     setShutterDisabled(!nextConnected)
@@ -163,6 +185,23 @@ function App() {
     setCameraStatus(nextConnected ? 'ONLINE' : 'OFFLINE')
     setReadoutLeft(nextConnected ? 'live feed connected' : 'device disconnected')
     setReadoutRight(nextConnected ? ip : 'ready')
+  }
+
+  const addGalleryImage = async (blob, metadata) => {
+    try {
+      const image = await saveGalleryImage(blob, metadata)
+      const url = URL.createObjectURL(image.blob)
+      galleryObjectUrls.current.push(url)
+      setGallery((previous) => [{ ...image, url }, ...previous])
+    } catch {
+      setHintText('image captured · browser storage unavailable')
+    }
+  }
+
+  const deleteGalleryImage = async (image) => {
+    await removeGalleryImage(image.id)
+    URL.revokeObjectURL(image.url)
+    setGallery((previous) => previous.filter((item) => item.id !== image.id))
   }
 
   const handleConnect = async () => {
@@ -314,6 +353,7 @@ function App() {
       setReadoutLeft('visual health screening complete')
       setReadoutRight('local estimate')
       setHintText('for research use: confirm results with an agronomist or trained model')
+      void addGalleryImage(blob, { source: 'device camera', status: result.isHealthy ? 'healthy' : 'risk', confidence: result.confidence })
       showResult(result.isHealthy, result.confidence)
     }, 'image/jpeg', 0.9)
   }
@@ -391,10 +431,10 @@ function App() {
         setFeedImage(URL.createObjectURL(blob))
         return fetch(HEALTH_PATH(deviceIP)).then((response) => {
           if (!response.ok) throw new Error('health service error')
-          return response.json()
+          return response.json().then((data) => ({ data, blob }))
         })
       })
-      .then((data) => {
+      .then(({ data, blob }) => {
         const plantDetected = data.isPlant === true || data.plantDetected === true
         const faceDetected = data.containsFace === true || data.faceDetected === true
 
@@ -408,6 +448,7 @@ function App() {
           return
         }
 
+        void addGalleryImage(blob, { source: 'ESP32-CAM', status: data.status === 'healthy' ? 'healthy' : 'risk', confidence: data.confidence })
         showResult(data.status === 'healthy', data.confidence)
       })
       .catch(() => {
@@ -572,6 +613,29 @@ function App() {
                       <li key={recommendation}>{recommendation}</li>
                     ))}
                   </ul>
+                )}
+              </div>
+
+              <div className="gallery-box">
+                <div className="log-head">Plant gallery <span>{gallery.length} saved</span></div>
+                {gallery.length === 0 ? (
+                  <p className="gallery-empty">Accepted plant captures will appear here.</p>
+                ) : (
+                  <div className="gallery-grid">
+                    {gallery.map((image) => (
+                      <div className="gallery-item" key={image.id}>
+                        <img src={image.url} alt={`Captured ${image.status === 'healthy' ? 'healthy' : 'at-risk'} plant`} />
+                        <div className="gallery-meta">
+                          <span className={`tag ${image.status}`}>{image.status === 'healthy' ? 'Healthy' : 'At Risk'}</span>
+                          <button type="button" className="delete-image" title="Delete image" aria-label="Delete image" onClick={() => deleteGalleryImage(image)}>
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                              <path d="M4 7h16M10 11v6M14 11v6M6 7l1 13h10l1-13M9 7l1-3h4l1 3" />
+                            </svg>
+                          </button>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
                 )}
               </div>
 
