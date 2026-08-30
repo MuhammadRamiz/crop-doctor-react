@@ -76,6 +76,12 @@ const SUPPORTED_IMAGE_TYPES = ['image/jpeg', 'image/png', 'image/webp']
 const plantLabels = ['plant', 'leaf', 'tree', 'flower', 'vegetable', 'fruit', 'corn', 'broccoli', 'cauliflower', 'cucumber', 'zucchini', 'squash', 'pepper', 'potato', 'banana', 'pineapple', 'strawberry', 'orange', 'lemon', 'fig', 'vine', 'greenhouse', 'daisy', 'rose', 'sunflower']
 const faceLabels = ['person', 'face', 'man', 'woman', 'boy', 'girl', 'head', 'human']
 
+const formatPlantName = (className) => {
+  const name = className.split(',')[0].trim()
+  if (['pot', 'flowerpot', 'greenhouse', 'vine'].includes(name.toLowerCase())) return 'Plant / crop'
+  return name.replace(/\b\w/g, (letter) => letter.toUpperCase())
+}
+
 const defaultDemoLeaf = (() => {
   return 'data:image/svg+xml;utf8,' + encodeURIComponent(`
     <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 300 225">
@@ -337,7 +343,7 @@ function App() {
   const validatePlantFrame = async (canvas) => {
     if (!plantModel.current) return { accepted: false, reason: classifierStatus === 'loading' ? 'plant checker is still loading' : 'plant checker unavailable' }
 
-    const predictions = await plantModel.current.classify(canvas, 5)
+    const predictions = await plantModel.current.classify(canvas, 10)
     const hasFace = predictions.some(({ className, probability }) => {
       const label = className.toLowerCase()
       return probability >= 0.08 && faceLabels.some((term) => label.includes(term))
@@ -352,7 +358,7 @@ function App() {
 
     if (hasFace) return { accepted: false, reason: 'person detected · frame rejected' }
     if (!hasPlant) return { accepted: false, reason: 'plant or crop not detected' }
-    return { accepted: true, plantName: plantPrediction?.className || 'Plant / crop' }
+    return { accepted: true, plantName: formatPlantName(plantPrediction?.className || 'Plant / crop') }
   }
 
   const estimatePlantHealth = (canvas) => {
