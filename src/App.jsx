@@ -132,6 +132,7 @@ function App() {
   const [recommendations, setRecommendations] = useState([])
   const [gallery, setGallery] = useState([])
   const [selectedGalleryImageId, setSelectedGalleryImageId] = useState(null)
+  const [supabaseConnected, setSupabaseConnected] = useState(false)
   const [uploadError, setUploadError] = useState('')
   const [shutterDisabled, setShutterDisabled] = useState(true)
   const videoRef = useRef(null)
@@ -204,6 +205,7 @@ function App() {
     const objectUrls = galleryObjectUrls.current
     getGalleryImages().then((images) => {
       if (!active) return
+      console.log(`🖼️ Loaded ${images.length} images into gallery`)
       setLogs(images.slice(0, 4).map((image) => ({
         isHealthy: image.status === 'healthy',
         confidence: image.confidence,
@@ -215,12 +217,31 @@ function App() {
         return { ...image, url }
       })
       setGallery(items)
-    }).catch(() => {})
+    }).catch((error) => {
+      console.error('❌ Error loading gallery images:', error)
+    })
 
     return () => {
       active = false
       objectUrls.forEach((url) => URL.revokeObjectURL(url))
     }
+  }, [])
+
+  useEffect(() => {
+    const checkSupabaseConnection = () => {
+      const hasUrl = !!import.meta.env.VITE_SUPABASE_URL
+      const hasKey = !!import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY
+      const isConnected = hasUrl && hasKey
+      setSupabaseConnected(isConnected)
+      console.log('🔌 Supabase connection status:', { 
+        hasUrl, 
+        hasKey, 
+        isConnected,
+        urlPrefix: hasUrl ? import.meta.env.VITE_SUPABASE_URL?.substring(0, 20) + '...' : 'none'
+      })
+    }
+    
+    checkSupabaseConnection()
   }, [])
 
   const setConnectedState = (nextConnected, ip = deviceIP) => {
@@ -790,6 +811,13 @@ function App() {
                 <div className="status-row">
                   <span>Network</span>
                   <span className="status-flag on"><span className="dot" />Local Wi-Fi</span>
+                </div>
+                <div className="status-row">
+                  <span>Shared gallery</span>
+                  <span className={`status-flag ${supabaseConnected ? 'on' : 'off'}`}>
+                    <span className="dot" />
+                    <span>{supabaseConnected ? 'Connected' : 'Local only'}</span>
+                  </span>
                 </div>
               </div>
 
