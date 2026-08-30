@@ -486,12 +486,20 @@ function App() {
     setShutterDisabled(true)
     setStampVisible(false)
     const results = []
+    const rejectedFiles = []
     for (const [index, file] of files.entries()) {
       setReadoutLeft(`checking image ${index + 1} of ${files.length}…`)
       setReadoutRight('AI validation')
       const result = await processSelectedImage(file)
       if (result.image) results.push(result)
-      if (result.error) setUploadError((current) => current ? `${current} ${result.error}` : result.error)
+      if (result.error) rejectedFiles.push({ name: file.name, error: result.error })
+    }
+
+    if (rejectedFiles.length > 0) {
+      const plantRejections = rejectedFiles.filter(({ error }) => error === 'Only clear plant or crop images are supported.')
+      setUploadError(plantRejections.length === rejectedFiles.length
+        ? `${rejectedFiles.length} image${rejectedFiles.length === 1 ? '' : 's'} rejected. Only clear plant or crop images are supported.`
+        : `${rejectedFiles.length} image${rejectedFiles.length === 1 ? '' : 's'} rejected. Check the upload message for supported files.`)
     }
 
     const lastResult = results[results.length - 1]
