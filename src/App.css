@@ -776,6 +776,9 @@ footer {
   border-radius: 50%;
 }
 
+.footer-mark > img:not(.footer-logo) { display: none; }
+.footer-mark .footer-logo { object-fit: contain; }
+
 @media (max-width: 900px) {
   .scanner-grid { grid-template-columns: 1fr; }
   .how-grid { grid-template-columns: repeat(2, 1fr); }
