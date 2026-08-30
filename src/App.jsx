@@ -767,7 +767,7 @@ function App() {
                 <div className={`stamp ${stampKind}`} style={{ opacity: stampVisible ? 1 : 0 }}>
                   {stampText}
                 </div>
-                <div className="readout">
+                <div className="readout" aria-live="polite" aria-atomic="true">
                   <span id="readoutLeft">{readoutLeft}</span>
                   <span id="readoutRight">{readoutRight}</span>
                 </div>
@@ -790,7 +790,7 @@ function App() {
                     </svg>
                     Choose plant image
                   </button>
-                  {uploadError && <div className="upload-error" role="alert">{uploadError}</div>}
+                  {uploadError && <div className="upload-error" role="alert" aria-live="assertive">{uploadError}</div>}
                 </div>
                 <div className="shutter-row">
                   <button type="button" className="shutter-btn" id="shutterBtn" disabled={shutterDisabled} onClick={runDiagnosis} aria-label="Scan plant">

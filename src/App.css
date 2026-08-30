@@ -10,14 +10,20 @@
   --mist-dim: #c7dabe;
   --rust: #c1572e;
   --ink: #0f1d15;
+  --surface: rgba(27, 53, 39, 0.78);
+  --surface-strong: rgba(36, 70, 53, 0.94);
   --radius-card: 22px;
+  --ring: rgba(168, 224, 138, 0.62);
+  --shadow-soft: 0 18px 45px -22px rgba(0, 0, 0, 0.7);
 }
 
 * { box-sizing: border-box; }
 html { scroll-behavior: smooth; }
 body {
   margin: 0;
-  background: var(--deep-canopy);
+  background:
+    radial-gradient(circle at top, rgba(93, 150, 91, 0.2), transparent 28%),
+    var(--deep-canopy);
   color: var(--mist);
   font-family: 'Space Grotesk', sans-serif;
   font-size: 16px;
@@ -34,6 +40,12 @@ h1, h2, h3 {
 
 a { color: inherit; text-decoration: none; }
 button, input { font: inherit; }
+button:focus-visible,
+input:focus-visible,
+a:focus-visible {
+  outline: 3px solid var(--ring);
+  outline-offset: 2px;
+}
 
 #root {
   min-height: 100vh;
@@ -170,8 +182,16 @@ nav {
   text-align: center;
 }
 
+.hero-top .wrap {
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.02), rgba(255, 255, 255, 0));
+  border: 1px solid rgba(239, 238, 225, 0.08);
+  border-radius: 26px;
+  padding: 32px 22px 18px;
+  box-shadow: var(--shadow-soft);
+}
+
 .hero-top h1 {
-  font-size: 3.4rem;
+  font-size: clamp(2.6rem, 5vw, 4.2rem);
   line-height: 1.05;
   margin-bottom: 16px;
 }
@@ -208,6 +228,7 @@ nav {
   font-size: 0.76rem;
   letter-spacing: 0.03em;
   color: var(--chlorophyll);
+  box-shadow: inset 0 1px 0 rgba(255,255,255,0.06);
 }
 
 .badge svg { width: 14px; height: 14px; }
@@ -223,12 +244,13 @@ nav {
 .scanner-side { display: flex; flex-direction: column; gap: 18px; }
 
 .specimen {
-  background: var(--mist);
+  background: linear-gradient(180deg, #f4f7f0 0%, #edf5ea 100%);
   border-radius: var(--radius-card);
   padding: 22px;
   color: var(--ink);
   position: relative;
-  box-shadow: 0 30px 60px -20px rgba(0, 0, 0, 0.5);
+  box-shadow: 0 30px 60px -20px rgba(0, 0, 0, 0.45);
+  border: 1px solid rgba(18, 54, 32, 0.08);
 }
 
 .specimen-label {
@@ -421,10 +443,11 @@ nav {
 }
 
 .status-card {
-  background: var(--canopy-mid);
+  background: linear-gradient(180deg, rgba(35, 60, 46, 0.9), rgba(22, 42, 31, 0.92));
   border-radius: 16px;
   padding: 20px 22px;
   border: 1px solid rgba(239, 238, 225, 0.08);
+  box-shadow: var(--shadow-soft);
 }
 
 .status-card h3 {
@@ -524,7 +547,7 @@ nav {
 }
 
 .how-card {
-  background: var(--canopy-mid);
+  background: linear-gradient(180deg, rgba(26, 49, 36, 0.9), rgba(19, 35, 28, 0.92));
   border: 1px solid rgba(239, 238, 225, 0.08);
   border-radius: 16px;
   padding: 26px 22px;
@@ -789,6 +812,7 @@ footer {
   .why-grid { grid-template-columns: repeat(2, 1fr); }
   .team-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
   .built-grid { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+  .hero-top .wrap { padding-top: 24px; }
 }
 
 @media (max-width: 860px) {
