@@ -1,5 +1,7 @@
 import { useEffect, useRef, useState } from 'react'
 import { getGalleryImages, removeGalleryImage, saveGalleryImage } from './galleryStorage'
+import danishPortrait from './assets/danish.jpeg'
+import ramizPortrait from './assets/ramiz.jpeg'
 import './App.css'
 
 const navItems = ['Overview', 'How it works', 'Benefits', 'Team', 'Contact']
@@ -60,8 +62,8 @@ const whyItems = [
 ]
 
 const teamMembers = [
-  { initials: 'D', name: 'Danish', role: 'Team Leader', dept: 'AI / Backend' },
-  { initials: 'R', name: 'Ramiz', role: 'Frontend', dept: 'Interface & UX' },
+  { initials: 'D', name: 'Danish', role: 'Team Leader', dept: 'AI / Backend', image: danishPortrait },
+  { initials: 'R', name: 'Ramiz', role: 'Frontend', dept: 'Interface & UX', image: ramizPortrait },
   { initials: 'M2', name: 'Member 2', role: 'Hardware', dept: 'ESP32-CAM Setup' },
   { initials: 'M3', name: 'Member 3', role: 'AI / ML', dept: 'Model Training' },
   { initials: 'M4', name: 'Member 4', role: 'Backend', dept: 'Server & API' },
@@ -881,7 +883,9 @@ function App() {
             <div className="team-grid">
               {teamMembers.map((member) => (
                 <div key={member.name} className="team-card">
-                  <div className="avatar">{member.initials}</div>
+                  <div className="avatar">
+                    {member.image ? <img src={member.image} alt={`${member.name} portrait`} /> : member.initials}
+                  </div>
                   <h3>{member.name}</h3>
                   <div className="team-role">{member.role}</div>
                   <div className="team-dept">{member.dept}</div>

@@ -609,6 +609,8 @@ nav {
   font-family: 'Space Grotesk', sans-serif;
 }
 
+.avatar img { width: 100%; height: 100%; border-radius: 50%; object-fit: cover; object-position: center 32%; }
+
 .team-card h3 {
   margin-bottom: 8px;
   font-size: 1.12rem;
