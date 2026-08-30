@@ -54,15 +54,14 @@ const whyItems = [
 
 const teamMembers = [
   { initials: 'D', name: 'Danish', role: 'Team Leader', dept: 'AI / Backend' },
-  { initials: 'M1', name: 'Member 1', role: 'Frontend', dept: 'Interface & UX' },
+  { initials: 'R', name: 'Ramiz', role: 'Frontend', dept: 'Interface & UX' },
   { initials: 'M2', name: 'Member 2', role: 'Hardware', dept: 'ESP32-CAM Setup' },
   { initials: 'M3', name: 'Member 3', role: 'AI / ML', dept: 'Model Training' },
   { initials: 'M4', name: 'Member 4', role: 'Backend', dept: 'Server & API' },
   { initials: 'M5', name: 'Member 5', role: 'Research', dept: 'Dataset & Domain' },
-  { initials: 'M6', name: 'Member 6', role: 'Testing / Documentation', dept: 'QA & Docs' },
 ]
 
-const builtWith = ['ESP32-CAM', 'Python', 'Flask', 'AI / ML', 'HTML/CSS/JS']
+const builtWith = ['ESP32-CAM', 'ReactJS', 'Generative AI', 'AI / ML', 'HTML/CSS/JS']
 const MAX_IMAGE_SIZE = 10 * 1024 * 1024
 const SUPPORTED_IMAGE_TYPES = ['image/jpeg', 'image/png', 'image/webp']
 const plantLabels = ['plant', 'leaf', 'tree', 'flower', 'vegetable', 'fruit', 'corn', 'broccoli', 'cauliflower', 'cucumber', 'zucchini', 'squash', 'pepper', 'potato', 'banana', 'pineapple', 'strawberry', 'orange', 'lemon', 'fig', 'vine', 'greenhouse', 'daisy', 'rose', 'sunflower']
