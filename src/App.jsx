@@ -103,6 +103,23 @@ function App() {
     deviceCameraStream.current?.getTracks().forEach((track) => track.stop())
   }, [])
 
+  useEffect(() => {
+    if (!deviceCameraActive || !deviceCameraStream.current || !videoRef.current) return undefined
+
+    const video = videoRef.current
+    const stream = deviceCameraStream.current
+    const startPlayback = () => video.play().catch(() => {})
+
+    video.srcObject = stream
+    video.addEventListener('loadedmetadata', startPlayback)
+    startPlayback()
+
+    return () => {
+      video.removeEventListener('loadedmetadata', startPlayback)
+      video.srcObject = null
+    }
+  }, [deviceCameraActive])
+
   const setConnectedState = (nextConnected, ip = deviceIP) => {
     setConnected(nextConnected)
     setShutterDisabled(!nextConnected)
@@ -168,9 +185,6 @@ function App() {
       setDeviceCameraActive(true)
       setConnectedState(true, 'device camera')
       setHintText('aim at one clear plant or crop, then press the shutter')
-      setTimeout(() => {
-        if (videoRef.current) videoRef.current.srcObject = stream
-      }, 0)
     } catch {
       setReadoutLeft('camera permission denied')
       setReadoutRight('allow camera access')
