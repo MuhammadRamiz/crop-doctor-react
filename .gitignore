@@ -15,10 +15,6 @@ dist-ssr
 .env.*
 !.env.example
 
-# Supabase configuration (keep template, ignore actual config)
-public/config.js
-!public/config.js.example
-
 # Editor directories and files
 .vscode/*
 !.vscode/extensions.json

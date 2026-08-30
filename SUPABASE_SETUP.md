@@ -7,68 +7,60 @@ This guide explains how to configure Supabase to enable users from different loc
 1. A Supabase project (create one at https://supabase.com)
 2. Your Supabase project URL and anon/public key
 
-## Step 1: Configure Supabase (Recommended: Runtime Configuration)
+## Step 1: Configure Supabase Credentials
 
-### Option A: Runtime Configuration (Easiest for GitHub Pages)
+### Current Configuration Method: Inline Configuration
 
-The app now supports runtime configuration via `public/config.js`, which is the **recommended method** for GitHub Pages deployment:
+The app now uses **inline configuration** in `index.html` for reliable GitHub Pages deployment. This is the current method being used.
 
-1. **Copy the config template:**
-   ```bash
-   cp public/config.js.example public/config.js
+**To update Supabase credentials:**
+
+1. **Edit `index.html`** and find the inline configuration script:
+   ```html
+   <script>
+     window.SUPABASE_CONFIG = {
+       url: 'https://your-project.supabase.co',
+       key: 'your-anon-key-here'
+     };
+   </script>
    ```
 
-2. **Edit `public/config.js`** and add your Supabase credentials:
-   ```javascript
-   window.SUPABASE_CONFIG = {
-     url: 'https://your-project.supabase.co',
-     key: 'your-anon-key-here'
-   }
-   ```
+2. **Replace the placeholder values** with your actual Supabase credentials
 
 3. **Deploy the changes:**
    ```bash
-   git add public/config.js
-   git commit -m "Configure Supabase runtime configuration"
+   git add index.html
+   git commit -m "Update Supabase credentials"
    git push origin main
    ```
 
-**Advantages:**
-- ✅ No need to rebuild the app when changing credentials
-- ✅ Works immediately on GitHub Pages
-- ✅ Easy to test and update
-- ✅ No GitHub Secrets configuration needed
+**Advantages of inline configuration:**
+- ✅ Works reliably on GitHub Pages
+- ✅ No path issues with base URLs
+- ✅ Simple to maintain
+- ✅ No external file dependencies
 
-### Option B: Environment Variables (Traditional Method)
+### Alternative: Environment Variables (For Local Development)
 
-You can still use environment variables if you prefer:
+For local development, you can use environment variables:
 
-#### Local Development
-Create a `.env.local` file in your project root:
+1. **Create `.env.local`:**
+   ```bash
+   cp .env.example .env.local
+   ```
 
-```bash
-# Copy from example
-cp .env.example .env.local
+2. **Add your credentials:**
+   ```bash
+   VITE_SUPABASE_URL=https://your-project.supabase.co
+   VITE_SUPABASE_PUBLISHABLE_KEY=your-anon-key-here
+   ```
 
-# Add your Supabase credentials
-VITE_SUPABASE_URL=https://your-project.supabase.co
-VITE_SUPABASE_PUBLISHABLE_KEY=your-anon-key-here
-```
+3. **Run locally:**
+   ```bash
+   npm run dev
+   ```
 
-#### Production Deployment (GitHub Pages)
-
-You need to add the environment variables to your GitHub repository:
-
-1. Go to your GitHub repository: https://github.com/kaleemullah19/crop-doctor-react
-2. Navigate to **Settings** → **Secrets and variables** → **Actions**
-3. Click **New repository secret**
-4. Add these secrets:
-   - **Name**: `VITE_SUPABASE_URL`
-   - **Value**: Your Supabase project URL
-   - **Name**: `VITE_SUPABASE_PUBLISHABLE_KEY` 
-   - **Value**: Your Supabase anon/public key
-
-5. Update your GitHub Actions workflow to use these secrets:
+**Note:** Environment variables take priority over inline configuration in local development.
 
 ## Step 2: Create Supabase Database Table
 
@@ -165,9 +157,7 @@ Update `.github/workflows/deploy.yml` to include the Supabase environment variab
 
 ## Step 6: Test the Setup
 
-### Using Runtime Configuration (Recommended)
-
-1. **Test locally:**
+1. **Test locally (optional):**
    ```bash
    npm run dev
    ```
@@ -175,8 +165,8 @@ Update `.github/workflows/deploy.yml` to include the Supabase environment variab
 
 2. **Deploy to production:**
    ```bash
-   git add public/config.js
-   git commit -m "Configure Supabase runtime configuration"
+   git add index.html
+   git commit -m "Update Supabase credentials"
    git push origin main
    ```
 
@@ -184,23 +174,6 @@ Update `.github/workflows/deploy.yml` to include the Supabase environment variab
    - Open browser console (F12)
    - Look for: `✅ Supabase initialized successfully`
    - Check "System status" → "Shared gallery" should show "Connected"
-
-### Using Environment Variables
-
-1. Test locally:
-   ```bash
-   npm run dev
-   ```
-   Upload an image and check if it appears in Supabase.
-
-2. Deploy to production:
-   ```bash
-   git add .
-   git commit -m "Configure Supabase for shared gallery"
-   git push origin main
-   ```
-
-3. Test on the live site: https://kaleemullah19.github.io/crop-doctor-react/
 
 ## How It Works
 
