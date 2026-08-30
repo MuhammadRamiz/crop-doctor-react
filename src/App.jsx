@@ -280,7 +280,7 @@ function App() {
       setSelectedGalleryImageId(image.id)
       return { ...image, url }
     } catch {
-      setHintText('shared gallery setup incomplete · check Supabase bucket and table')
+      setHintText('shared gallery setup incomplete · check Supabase bucket and table policies')
       return null
     }
   }

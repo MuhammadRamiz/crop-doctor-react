@@ -222,15 +222,15 @@ export const saveGalleryImage = async (blob, metadata) => {
     const { data: publicUrl } = supabase.storage.from(BUCKET_NAME).getPublicUrl(filePath)
     console.log('🔗 Public URL generated:', publicUrl.publicUrl)
 
-    const { data, error } = await supabase.from('scans').upsert({
-      image_url: publicUrl.publicUrl,
-      image_hash: metadata.imageHash,
-      plant_name: metadata.plantName || 'Plant / crop',
-      status: metadata.status,
-      confidence: metadata.confidence,
-      source: metadata.source,
-      storage_path: filePath,
-    }, { onConflict: 'image_hash' }).select().single()
+const { data, error } = await supabase.from('scans').insert({
+        image_url: publicUrl.publicUrl,
+        image_hash: metadata.imageHash,
+        plant_name: metadata.plantName || 'Plant / crop',
+        status: metadata.status,
+        confidence: metadata.confidence,
+        source: metadata.source,
+        storage_path: filePath,
+      }).select().single()
 
     if (error) {
       throw new Error(error.message)
@@ -252,6 +252,7 @@ export const saveGalleryImage = async (blob, metadata) => {
     }
   } catch (error) {
     console.error('❌ Supabase save failed. The app is configured for shared storage, so the upload did not persist to the database.', error)
+    console.error('❌ Common cause: missing table columns or storage policies. Check the scans table and the plant-images bucket permissions.')
     throw new Error('Supabase upload failed. Check the bucket policies, scans table, and project permissions.')
   }
 }
