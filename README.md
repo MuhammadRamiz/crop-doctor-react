@@ -2,6 +2,8 @@
 
 Crop Doctor is a college project for checking visible crop and plant health from an ESP32-CAM image. The React dashboard captures a frame, asks the connected service to validate it, and displays a health diagnosis only for accepted plant images.
 
+*Note: This project uses automated GitHub Actions deployment.*
+
 ## Run locally
 
 ```bash
