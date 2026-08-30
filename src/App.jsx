@@ -100,6 +100,7 @@ function App() {
   const [recommendations, setRecommendations] = useState([])
   const [gallery, setGallery] = useState([])
   const [selectedGalleryImageId, setSelectedGalleryImageId] = useState(null)
+  const [uploadError, setUploadError] = useState('')
   const [shutterDisabled, setShutterDisabled] = useState(true)
   const videoRef = useRef(null)
   const fileInputRef = useRef(null)
@@ -409,17 +410,20 @@ function App() {
     event.target.value = ''
     if (!file) return
     if (!SUPPORTED_IMAGE_TYPES.includes(file.type)) {
+      setUploadError('Unsupported format. Choose a JPG, PNG, or WebP image.')
       rejectFrame('unsupported image format')
       setHintText('choose a JPG, PNG, or WebP image')
       return
     }
     if (file.size > MAX_IMAGE_SIZE) {
+      setUploadError('Image is too large. Choose a file smaller than 10 MB.')
       rejectFrame('image is too large')
       setHintText('choose an image smaller than 10 MB')
       return
     }
     if (scanInProgress.current) return
 
+    setUploadError('')
     scanInProgress.current = true
     setShutterDisabled(true)
     setStampVisible(false)
@@ -650,13 +654,14 @@ function App() {
                   )}
                 </div>
                 <div className="upload-row">
-                  <input ref={fileInputRef} className="file-input" type="file" accept="image/jpeg,image/png,image/webp" onChange={handleImageSelect} />
+                  <input ref={fileInputRef} className="file-input" type="file" accept="image/*" onChange={handleImageSelect} />
                   <button type="button" className="btn btn-upload" onClick={() => fileInputRef.current?.click()}>
                     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
                       <path d="M12 16V4M7 9l5-5 5 5M5 20h14" />
                     </svg>
                     Choose plant image
                   </button>
+                  {uploadError && <div className="upload-error" role="alert">{uploadError}</div>}
                 </div>
                 <div className="shutter-row">
                   <button type="button" className="shutter-btn" id="shutterBtn" disabled={shutterDisabled} onClick={runDiagnosis} aria-label="Scan plant">
