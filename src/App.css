@@ -676,6 +676,22 @@ nav {
   color: var(--mist-dim);
 }
 
+.recommendation-box {
+  background: rgba(168, 224, 138, 0.08);
+  border: 1px solid rgba(168, 224, 138, 0.2);
+  border-radius: 16px;
+  padding: 16px 18px;
+}
+
+.recommendation-box ul {
+  margin: 0;
+  padding-left: 18px;
+  color: var(--mist-dim);
+  font-size: 0.84rem;
+}
+
+.recommendation-box li + li { margin-top: 8px; }
+
 .tag {
   display: inline-flex;
   padding: 4px 8px;

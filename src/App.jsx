@@ -94,10 +94,12 @@ function App() {
   const [cameraStatus, setCameraStatus] = useState('OFFLINE')
   const [lastScan, setLastScan] = useState('0%')
   const [logs, setLogs] = useState([])
+  const [recommendations, setRecommendations] = useState([])
   const [shutterDisabled, setShutterDisabled] = useState(true)
   const videoRef = useRef(null)
   const deviceCameraStream = useRef(null)
   const plantModel = useRef(null)
+  const scanInProgress = useRef(false)
 
   const STREAM_PATH = (ip) => `http://${ip}:81/stream`
   const CAPTURE_PATH = (ip) => `http://${ip}/capture`
@@ -328,6 +330,7 @@ function App() {
 
   const showResult = (isHealthy, confidence) => {
     setTimeout(() => {
+      scanInProgress.current = false
       setStampText(isHealthy ? 'Healthy' : 'At Risk')
       setStampKind(isHealthy ? 'healthy' : 'risk')
       setStampVisible(true)
@@ -336,11 +339,24 @@ function App() {
       setShutterDisabled(false)
       setLastScan(`${confidence}%`)
       setScanCount((count) => count + 1)
+      setRecommendations(isHealthy
+        ? [
+            'Keep the current watering and light routine consistent.',
+            'Check leaves regularly for early discoloration or pests.',
+            'Keep airflow around the plant clear to reduce moisture buildup.',
+          ]
+        : [
+            'Inspect both sides of the leaves for pests, spots, or yellowing.',
+            'Check soil moisture and drainage before watering again.',
+            'Remove severely damaged leaves and compare a new scan soon.',
+            'Use an agronomist or soil test before applying treatment or fertilizer.',
+          ])
       logScan(isHealthy, confidence)
     }, 1000)
   }
 
   const rejectFrame = (message) => {
+    scanInProgress.current = false
     setFrameScanning(false)
     setStampVisible(false)
     setShutterDisabled(false)
@@ -350,7 +366,9 @@ function App() {
   }
 
   const runDiagnosis = () => {
-    if (!connected || shutterDisabled) return
+    if (!connected || shutterDisabled || scanInProgress.current) return
+
+    scanInProgress.current = true
 
     if (deviceCameraActive) {
       captureDeviceFrame()
@@ -562,6 +580,17 @@ function App() {
                   )}
                 </div>
               </div>
+
+              {recommendations.length > 0 && (
+                <div className="recommendation-box">
+                  <div className="log-head">Care recommendations</div>
+                  <ul>
+                    {recommendations.map((recommendation) => (
+                      <li key={recommendation}>{recommendation}</li>
+                    ))}
+                  </ul>
+                </div>
+              )}
             </div>
           </div>
         </section>
