@@ -83,6 +83,24 @@ const formatPlantName = (className) => {
   return name.replace(/\b\w/g, (letter) => letter.toUpperCase())
 }
 
+const hasVegetationColor = (canvas) => {
+  const context = canvas.getContext('2d', { willReadFrequently: true })
+  const { data } = context.getImageData(0, 0, canvas.width, canvas.height)
+  let vegetationPixels = 0
+  let visiblePixels = 0
+
+  for (let index = 0; index < data.length; index += 16) {
+    const red = data[index]
+    const green = data[index + 1]
+    const blue = data[index + 2]
+    if (red + green + blue < 60) continue
+    visiblePixels += 1
+    if (green > red * 1.03 && green > blue * 1.03 && green > 40) vegetationPixels += 1
+  }
+
+  return vegetationPixels / Math.max(visiblePixels, 1) >= 0.08
+}
+
 const defaultDemoLeaf = (() => {
   return 'data:image/svg+xml;utf8,' + encodeURIComponent(`
     <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 300 225">
@@ -355,10 +373,11 @@ function App() {
       const label = className.toLowerCase()
       return probability >= 0.08 && faceLabels.some((term) => label.includes(term))
     })
-    const hasPlant = predictions.some(({ className, probability }) => {
+    const hasPlantLabel = predictions.some(({ className, probability }) => {
       const label = className.toLowerCase()
       return probability >= 0.12 && plantLabels.some((term) => label.includes(term))
     })
+    const hasPlant = hasPlantLabel || hasVegetationColor(canvas)
     const plantPrediction = predictions
       .filter(({ className, probability }) => {
         const label = className.toLowerCase()
@@ -512,7 +531,9 @@ function App() {
         const count = rejectedFiles.filter((file) => file.error === error).length
         return `${count} image${count === 1 ? '' : 's'}: ${error}`
       })
-      setUploadError(summaries.join(' '))
+      setUploadError(`${files.length} selected · ${results.length} added · ${rejectedFiles.length} rejected. ${summaries.join(' ')}`)
+    } else {
+      setUploadError(`${files.length} selected · ${results.length} added`)
     }
 
     const lastResult = results[results.length - 1]
