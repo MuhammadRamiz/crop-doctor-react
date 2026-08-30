@@ -36,6 +36,8 @@ Crop Doctor only checks whether a face appears in a frame so that people are not
 
 Accepted captures are saved as image blobs in the visitor's browser using IndexedDB. They appear as thumbnails in the Plant gallery and can be deleted individually. Because GitHub Pages is a static host, each visitor has a private gallery on their own device; a shared gallery would require a server database and image storage.
 
+Selecting a thumbnail restores its image, result, confidence, and care plan in the scanner view. Saved scans also repopulate Recent results after a page reload.
+
 ## GitHub Pages
 
 The published site is available at:

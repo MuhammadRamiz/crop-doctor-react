@@ -160,6 +160,11 @@ function App() {
     const objectUrls = galleryObjectUrls.current
     getGalleryImages().then((images) => {
       if (!active) return
+      setLogs(images.slice(0, 4).map((image) => ({
+        isHealthy: image.status === 'healthy',
+        confidence: image.confidence,
+        time: new Date(image.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+      })))
       const items = images.map((image) => {
         const url = URL.createObjectURL(image.blob)
         objectUrls.push(url)
@@ -201,7 +206,38 @@ function App() {
   const deleteGalleryImage = async (image) => {
     await removeGalleryImage(image.id)
     URL.revokeObjectURL(image.url)
-    setGallery((previous) => previous.filter((item) => item.id !== image.id))
+    const remainingImages = gallery.filter((item) => item.id !== image.id)
+    setGallery(remainingImages)
+    setLogs(remainingImages.slice(0, 4).map((item) => ({
+      isHealthy: item.status === 'healthy',
+      confidence: item.confidence,
+      time: new Date(item.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+    })))
+  }
+
+  const getRecommendations = (isHealthy) => isHealthy
+    ? [
+        'Keep the current watering and light routine consistent.',
+        'Check leaves regularly for early discoloration or pests.',
+        'Keep airflow around the plant clear to reduce moisture buildup.',
+      ]
+    : [
+        'Inspect both sides of the leaves for pests, spots, or yellowing.',
+        'Check soil moisture and drainage before watering again.',
+        'Remove severely damaged leaves and compare a new scan soon.',
+        'Use an agronomist or soil test before applying treatment or fertilizer.',
+      ]
+
+  const viewGalleryImage = (image) => {
+    const isHealthy = image.status === 'healthy'
+    setFeedImage(image.url)
+    setStampText(isHealthy ? 'Healthy' : 'At Risk')
+    setStampKind(isHealthy ? 'healthy' : 'risk')
+    setStampVisible(true)
+    setReadoutLeft('saved scan result')
+    setReadoutRight(`${image.confidence}% confidence`)
+    setLastScan(`${image.confidence}%`)
+    setRecommendations(getRecommendations(isHealthy))
   }
 
   const handleConnect = async () => {
@@ -379,18 +415,7 @@ function App() {
       setShutterDisabled(false)
       setLastScan(`${confidence}%`)
       setScanCount((count) => count + 1)
-      setRecommendations(isHealthy
-        ? [
-            'Keep the current watering and light routine consistent.',
-            'Check leaves regularly for early discoloration or pests.',
-            'Keep airflow around the plant clear to reduce moisture buildup.',
-          ]
-        : [
-            'Inspect both sides of the leaves for pests, spots, or yellowing.',
-            'Check soil moisture and drainage before watering again.',
-            'Remove severely damaged leaves and compare a new scan soon.',
-            'Use an agronomist or soil test before applying treatment or fertilizer.',
-          ])
+      setRecommendations(getRecommendations(isHealthy))
       logScan(isHealthy, confidence)
     }, 1000)
   }
@@ -623,11 +648,23 @@ function App() {
                 ) : (
                   <div className="gallery-grid">
                     {gallery.map((image) => (
-                      <div className="gallery-item" key={image.id}>
+                      <div
+                        className="gallery-item"
+                        key={image.id}
+                        role="button"
+                        tabIndex="0"
+                        onClick={() => viewGalleryImage(image)}
+                        onKeyDown={(event) => {
+                          if (event.key === 'Enter' || event.key === ' ') viewGalleryImage(image)
+                        }}
+                      >
                         <img src={image.url} alt={`Captured ${image.status === 'healthy' ? 'healthy' : 'at-risk'} plant`} />
                         <div className="gallery-meta">
                           <span className={`tag ${image.status}`}>{image.status === 'healthy' ? 'Healthy' : 'At Risk'}</span>
-                          <button type="button" className="delete-image" title="Delete image" aria-label="Delete image" onClick={() => deleteGalleryImage(image)}>
+                          <button type="button" className="delete-image" title="Delete image" aria-label="Delete image" onClick={(event) => {
+                            event.stopPropagation()
+                            deleteGalleryImage(image)
+                          }}>
                             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
                               <path d="M4 7h16M10 11v6M14 11v6M6 7l1 13h10l1-13M9 7l1-3h4l1 3" />
                             </svg>
