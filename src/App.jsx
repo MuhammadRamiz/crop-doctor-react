@@ -249,7 +249,7 @@ function App() {
       setSelectedGalleryImageId(image.id)
       return { ...image, url }
     } catch {
-      setHintText('image captured · browser storage unavailable')
+      setHintText('shared gallery setup incomplete · check Supabase bucket and table')
       return null
     }
   }
@@ -503,7 +503,7 @@ function App() {
         confidence: result.confidence,
       })
       if (imageRecord?.duplicate) return { error: 'This image is already in the gallery.' }
-      return imageRecord ? { image: imageRecord, result, plantName: validation.plantName } : { error: 'could not save selected image' }
+      return imageRecord ? { image: imageRecord, result, plantName: validation.plantName } : { error: 'shared gallery setup incomplete' }
     } catch {
       return { error: 'plant checker unavailable' }
     } finally {
