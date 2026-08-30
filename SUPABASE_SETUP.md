@@ -7,9 +7,43 @@ This guide explains how to configure Supabase to enable users from different loc
 1. A Supabase project (create one at https://supabase.com)
 2. Your Supabase project URL and anon/public key
 
-## Step 1: Configure Environment Variables
+## Step 1: Configure Supabase (Recommended: Runtime Configuration)
 
-### Local Development
+### Option A: Runtime Configuration (Easiest for GitHub Pages)
+
+The app now supports runtime configuration via `public/config.js`, which is the **recommended method** for GitHub Pages deployment:
+
+1. **Copy the config template:**
+   ```bash
+   cp public/config.js.example public/config.js
+   ```
+
+2. **Edit `public/config.js`** and add your Supabase credentials:
+   ```javascript
+   window.SUPABASE_CONFIG = {
+     url: 'https://your-project.supabase.co',
+     key: 'your-anon-key-here'
+   }
+   ```
+
+3. **Deploy the changes:**
+   ```bash
+   git add public/config.js
+   git commit -m "Configure Supabase runtime configuration"
+   git push origin main
+   ```
+
+**Advantages:**
+- ✅ No need to rebuild the app when changing credentials
+- ✅ Works immediately on GitHub Pages
+- ✅ Easy to test and update
+- ✅ No GitHub Secrets configuration needed
+
+### Option B: Environment Variables (Traditional Method)
+
+You can still use environment variables if you prefer:
+
+#### Local Development
 Create a `.env.local` file in your project root:
 
 ```bash
@@ -21,7 +55,7 @@ VITE_SUPABASE_URL=https://your-project.supabase.co
 VITE_SUPABASE_PUBLISHABLE_KEY=your-anon-key-here
 ```
 
-### Production Deployment (GitHub Pages)
+#### Production Deployment (GitHub Pages)
 
 You need to add the environment variables to your GitHub repository:
 
@@ -131,6 +165,28 @@ Update `.github/workflows/deploy.yml` to include the Supabase environment variab
 
 ## Step 6: Test the Setup
 
+### Using Runtime Configuration (Recommended)
+
+1. **Test locally:**
+   ```bash
+   npm run dev
+   ```
+   Upload an image and check if it appears in Supabase.
+
+2. **Deploy to production:**
+   ```bash
+   git add public/config.js
+   git commit -m "Configure Supabase runtime configuration"
+   git push origin main
+   ```
+
+3. **Test on the live site:** https://kaleemullah19.github.io/crop-doctor-react/
+   - Open browser console (F12)
+   - Look for: `✅ Supabase initialized successfully`
+   - Check "System status" → "Shared gallery" should show "Connected"
+
+### Using Environment Variables
+
 1. Test locally:
    ```bash
    npm run dev
@@ -156,19 +212,31 @@ Update `.github/workflows/deploy.yml` to include the Supabase environment variab
 ## Troubleshooting
 
 ### Images not appearing for other users
-- Check that environment variables are set correctly in production
+- **Runtime config**: Check that `public/config.js` is properly configured
+- **Environment variables**: Check that they are set correctly in production
 - Verify the `plant-images` bucket is public
 - Ensure storage policies allow read access
+- Check browser console for specific error messages
 
 ### Upload errors
 - Check that the user has permission to upload to the bucket
 - Verify the bucket name matches exactly: `plant-images`
 - Check Supabase logs for specific error messages
+- Ensure runtime config or environment variables are set
 
-### Environment variables not working
-- Ensure variables start with `VITE_` prefix for Vite
-- Check that GitHub Actions secrets are set correctly
+### Configuration not working
+- **Runtime config**: Check browser console for configuration source
+- **Environment variables**: Ensure variables start with `VITE_` prefix for Vite
+- Check that GitHub Actions secrets are set correctly (if using env vars)
 - Verify the workflow includes the environment variables in the build step
+- Look for console warnings about missing configuration
+
+### Debug Console Messages
+- `✅ Supabase initialized successfully` - Configuration is working
+- `⚠️ Supabase not configured` - Missing credentials
+- `🔧 Using runtime configuration` - Using config.js
+- `🔧 Using environment variables` - Using build-time env vars
+- `📊 Found X images in Supabase` - Database connection working
 
 ## Security Notes
 

@@ -4,17 +4,42 @@ const DATABASE_NAME = 'crop-doctor-gallery'
 const STORE_NAME = 'images'
 const DATABASE_VERSION = 1
 const BUCKET_NAME = 'plant-images'
-const supabaseUrl = import.meta.env.VITE_SUPABASE_URL
-const supabaseKey = import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY
-const supabase = supabaseUrl && supabaseKey ? createClient(supabaseUrl, supabaseKey) : null
+
+// Try multiple configuration sources
+const getSupabaseConfig = () => {
+  // Priority 1: Environment variables (build-time)
+  const envUrl = import.meta.env.VITE_SUPABASE_URL
+  const envKey = import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY
+  
+  if (envUrl && envKey) {
+    console.log('🔧 Using environment variables for Supabase configuration')
+    return { url: envUrl, key: envKey, source: 'environment' }
+  }
+  
+  // Priority 2: Runtime configuration (config.js)
+  if (window.SUPABASE_CONFIG && window.SUPABASE_CONFIG.url && window.SUPABASE_CONFIG.key) {
+    console.log('🔧 Using runtime configuration for Supabase')
+    return { url: window.SUPABASE_CONFIG.url, key: window.SUPABASE_CONFIG.key, source: 'runtime' }
+  }
+  
+  console.warn('⚠️ No Supabase configuration found')
+  return { url: null, key: null, source: 'none' }
+}
+
+const config = getSupabaseConfig()
+const supabase = config.url && config.key ? createClient(config.url, config.key) : null
 
 // Log Supabase configuration status
 if (supabase) {
-  console.log('✅ Supabase initialized successfully', { url: supabaseUrl })
+  console.log('✅ Supabase initialized successfully', { 
+    source: config.source,
+    urlPrefix: config.url.substring(0, 20) + '...' 
+  })
 } else {
   console.warn('⚠️ Supabase not configured - falling back to local storage', { 
-    hasUrl: !!supabaseUrl, 
-    hasKey: !!supabaseKey 
+    source: config.source,
+    hasUrl: !!config.url, 
+    hasKey: !!config.key 
   })
 }
 
