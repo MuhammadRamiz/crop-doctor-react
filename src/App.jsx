@@ -884,7 +884,7 @@ function App() {
               {teamMembers.map((member) => (
                 <div key={member.name} className="team-card">
                   <div className="avatar">
-                    {member.image ? <img src={member.image} alt={`${member.name} portrait`} /> : member.initials}
+                    {member.image ? <img className={`portrait-${member.name.toLowerCase()}`} src={member.image} alt={`${member.name} portrait`} /> : member.initials}
                   </div>
                   <h3>{member.name}</h3>
                   <div className="team-role">{member.role}</div>
