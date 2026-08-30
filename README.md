@@ -26,7 +26,7 @@ The camera service `/health` endpoint must return JSON with an explicit plant re
 }
 ```
 
-The dashboard rejects an ESP32-CAM frame when `isPlant` or `plantDetected` is not `true`, or when `containsFace` or `faceDetected` is `true`. Device-camera captures are checked locally with MobileNet and reject likely faces and non-plant images. Camera and service errors are shown as rejected scans; no demo diagnosis is generated. Plant recognition and crop-health diagnosis are separate: browser captures still require a connected crop-health model/API to determine healthy or at-risk status.
+The dashboard rejects an ESP32-CAM frame when `isPlant` or `plantDetected` is not `true`, or when `containsFace` or `faceDetected` is `true`. Device-camera captures are checked locally with MobileNet and reject likely faces and non-plant images. They then receive a lightweight color-based visual health estimate for this college prototype. Camera and service errors are shown as rejected scans; no random diagnosis is generated. A trained crop-health model/API is still recommended for reliable agricultural diagnosis.
 
 ## GitHub Pages
 
