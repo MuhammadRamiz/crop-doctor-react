@@ -165,23 +165,41 @@ export const getGalleryImages = async () => {
 export const saveGalleryImage = async (blob, metadata) => {
   if (supabase) {
     try {
-      console.log('📤 Uploading image to Supabase...', { imageHash: metadata.imageHash })
-      const filePath = `${metadata.imageHash}.jpg`
+      console.log('📤 Attempting to save image to Supabase...', { 
+        imageHash: metadata.imageHash,
+        plantName: metadata.plantName,
+        status: metadata.status,
+        hasBlob: !!blob,
+        blobSize: blob?.size
+      })
       
-      const { error: uploadError } = await supabase.storage.from(BUCKET_NAME).upload(filePath, blob, { contentType: 'image/jpeg', upsert: false })
+      const filePath = `${metadata.imageHash}.jpg`
+      console.log('📁 Uploading to storage bucket:', BUCKET_NAME, 'file:', filePath)
+      
+      const { error: uploadError, data: uploadData } = await supabase.storage.from(BUCKET_NAME).upload(filePath, blob, { contentType: 'image/jpeg', upsert: false })
       
       if (uploadError) {
-        if (uploadError.message === 'The resource already exists') {
+        console.error('❌ Storage upload failed:', uploadError)
+        console.error('❌ Upload error details:', {
+          message: uploadError.message,
+          statusCode: uploadError.statusCode,
+          error: uploadError.error
+        })
+        
+        if (uploadError.message === 'The resource already exists' || uploadError.message.includes('already exists')) {
           console.log('⏭️ Image already exists in storage, fetching existing record')
         } else {
-          console.error('❌ Storage upload error:', uploadError)
+          console.error('❌ Storage upload error - falling back to local storage')
           throw uploadError
         }
+      } else {
+        console.log('✅ Storage upload successful:', uploadData)
       }
 
       const { data: publicUrl } = supabase.storage.from(BUCKET_NAME).getPublicUrl(filePath)
       console.log('🔗 Public URL generated:', publicUrl.publicUrl)
       
+      console.log('💾 Inserting record into scans table...')
       const { data, error } = await supabase.from('scans').insert({
         image_url: publicUrl.publicUrl,
         image_hash: metadata.imageHash,
@@ -193,19 +211,36 @@ export const saveGalleryImage = async (blob, metadata) => {
       }).select().single()
 
       if (error) {
+        console.error('❌ Database insert failed:', error)
+        console.error('❌ Database error details:', {
+          message: error.message,
+          code: error.code,
+          details: error.details,
+          hint: error.hint
+        })
+        
         if (error.code === '23505') {
           console.log('⏭️ Duplicate image detected in database')
           const { data: duplicate } = await supabase.from('scans').select('*').eq('image_hash', metadata.imageHash).single()
           return duplicate ? { duplicate: true, id: duplicate.id, blob, ...metadata } : null
         }
-        console.error('❌ Database insert error:', error)
+        console.error('❌ Database insert error - falling back to local storage')
         throw error
       }
       
-      console.log('✅ Image saved to Supabase successfully', { id: data.id })
+      console.log('✅ Image saved to Supabase successfully', { 
+        id: data.id, 
+        plantName: data.plant_name,
+        status: data.status 
+      })
       return { duplicate: false, id: data.id, blob, ...metadata, storagePath: filePath, createdAt: new Date(data.created_at).getTime() }
     } catch (error) {
       console.error('❌ Supabase save failed, falling back to local storage:', error)
+      console.error('❌ Error details:', {
+        message: error.message,
+        name: error.name,
+        stack: error.stack
+      })
     }
   }
 
