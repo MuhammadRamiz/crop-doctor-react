@@ -3,7 +3,7 @@
   "private": true,
   "version": "0.0.0",
   "type": "module",
-  "homepage": "https://kaleemullah19.github.io/crop-doctor-react",
+  "homepage": "https://MuhammadRamiz.github.io/crop-doctor-react",
   "scripts": {
     "dev": "vite",
     "build": "vite build",
