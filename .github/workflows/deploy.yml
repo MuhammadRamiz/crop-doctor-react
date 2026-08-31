@@ -1,5 +1,9 @@
 name: Deploy to GitHub Pages
 
+# Note: GitHub is currently updating actions/checkout, actions/setup-node, and actions/upload-artifact
+# to support Node.js 24. The deprecation warning about Node.js 20 will resolve automatically
+# when GitHub finishes their rollout. The app is already configured for Node.js 24.
+
 on:
   push:
     branches:
