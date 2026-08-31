@@ -840,11 +840,13 @@ function App() {
         plantGroups[plant] = []
       }
       plantGroups[plant].push({
+        id: image.id,
         date: new Date(image.createdAt).toLocaleDateString([], { month: 'short', day: 'numeric' }),
         time: new Date(image.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
         confidence: image.confidence,
         status: image.status,
         diseases: image.diseases || [],
+        createdAt: image.createdAt,
       })
     })
     
@@ -1061,8 +1063,20 @@ function App() {
                           {scans.slice(0, 8).map((scan, idx) => (
                             <div
                               key={idx}
-                              className={`progress-dot ${scan.status}`}
-                              title={`${scan.date} ${scan.time} - ${scan.confidence}% confidence${scan.diseases.length > 0 ? ` - ${scan.diseases.length} issue(s) detected` : ''}`}
+                              className={`progress-dot ${scan.status} ${selectedGalleryImageId === scan.id ? 'active' : ''}`}
+                              role="button"
+                              tabIndex="0"
+                              title={`${scan.date} ${scan.time} - ${scan.confidence}% confidence${scan.diseases.length > 0 ? ` - ${scan.diseases.length} issue(s) detected` : ''} · Click to view`}
+                              onClick={() => {
+                                const galleryImage = gallery.find((img) => img.id === scan.id)
+                                if (galleryImage) viewGalleryImage(galleryImage)
+                              }}
+                              onKeyDown={(e) => {
+                                if (e.key === 'Enter' || e.key === ' ') {
+                                  const galleryImage = gallery.find((img) => img.id === scan.id)
+                                  if (galleryImage) viewGalleryImage(galleryImage)
+                                }
+                              }}
                             >
                               <span className="progress-value">{scan.confidence}%</span>
                             </div>

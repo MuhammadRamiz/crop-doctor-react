@@ -814,6 +814,23 @@ nav {
   box-shadow: 0 0 8px rgba(193, 87, 46, 0.3);
 }
 
+.progress-dot.active {
+  transform: scale(1.15);
+  box-shadow: 0 0 12px currentColor, inset 0 0 0 3px rgba(15, 32, 22, 0.9);
+  font-weight: 700;
+  border-width: 3px;
+}
+
+.progress-dot.active.healthy {
+  border-color: var(--chlorophyll);
+  box-shadow: 0 0 16px rgba(168, 224, 138, 0.6), inset 0 0 0 3px rgba(15, 32, 22, 0.9);
+}
+
+.progress-dot.active.risk {
+  border-color: #f39d79;
+  box-shadow: 0 0 16px rgba(243, 157, 121, 0.6), inset 0 0 0 3px rgba(15, 32, 22, 0.9);
+}
+
 .progress-value {
   display: block;
   line-height: 1;
