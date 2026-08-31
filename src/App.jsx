@@ -866,6 +866,19 @@ function App() {
     <>
       <div className="veins" />
 
+      <button
+        type="button"
+        className="mobile-fab"
+        onClick={() => fileInputRef.current?.click()}
+        title="Upload plant image (mobile)"
+        aria-label="Upload plant image"
+      >
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+          <path d="M12 16V4M7 9l5-5 5 5M5 20h14" />
+        </svg>
+        <span className="mobile-fab-label">Photo</span>
+      </button>
+
       <nav>
         <div className="nav-inner wrap">
           <div className="brand">

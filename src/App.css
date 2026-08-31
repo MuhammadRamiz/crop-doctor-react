@@ -927,6 +927,51 @@ footer {
 .footer-mark > img:not(.footer-logo) { display: none; }
 .footer-mark .footer-logo { object-fit: contain; }
 
+.mobile-fab {
+  display: none;
+  position: fixed;
+  bottom: 24px;
+  right: 24px;
+  z-index: 45;
+  width: 64px;
+  height: 64px;
+  border-radius: 50%;
+  background: radial-gradient(circle at 35% 30%, var(--fern-light), var(--fern) 70%);
+  border: 3px solid var(--mist);
+  box-shadow: 0 8px 24px -6px rgba(0, 0, 0, 0.7), 0 0 0 2px var(--soil);
+  cursor: pointer;
+  align-items: center;
+  justify-content: center;
+  transition: transform 0.2s cubic-bezier(0.2, 1.6, 0.4, 1), box-shadow 0.2s ease;
+  flex-direction: column;
+}
+
+.mobile-fab:hover {
+  transform: scale(1.15);
+  box-shadow: 0 12px 32px -4px rgba(0, 0, 0, 0.8), 0 0 0 2px var(--soil);
+}
+
+.mobile-fab:active {
+  transform: scale(0.92);
+}
+
+.mobile-fab svg {
+  width: 28px;
+  height: 28px;
+  stroke: var(--mist);
+  margin-bottom: 2px;
+}
+
+.mobile-fab-label {
+  font-size: 0.45rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--mist);
+  text-align: center;
+  line-height: 1;
+}
+
 @media (max-width: 900px) {
   .scanner-grid { grid-template-columns: 1fr; }
   .how-grid { grid-template-columns: repeat(2, 1fr); }
@@ -950,4 +995,8 @@ footer {
   .how-grid, .why-grid, .team-grid, .built-grid { grid-template-columns: 1fr; }
   .connect-row { flex-direction: column; }
   .tile-row { grid-template-columns: 1fr; }
+  
+  .mobile-fab {
+    display: flex;
+  }
 }
