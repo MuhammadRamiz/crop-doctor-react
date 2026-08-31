@@ -728,6 +728,98 @@ nav {
 
 .recommendation-box li + li { margin-top: 8px; }
 
+.progress-box {
+  background: rgba(93, 150, 91, 0.08);
+  border: 1px solid rgba(93, 150, 91, 0.2);
+  border-radius: 16px;
+  padding: 16px 18px;
+  margin-top: 16px;
+}
+
+.progress-box.empty { background: rgba(255, 255, 255, 0.03); }
+.progress-box p { margin: 0; color: var(--mist-dim); font-size: 0.84rem; }
+
+.progress-tracker { display: flex; flex-direction: column; gap: 16px; }
+
+.progress-plant {
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid rgba(93, 150, 91, 0.15);
+  border-radius: 12px;
+  padding: 12px;
+}
+
+.progress-plant-name {
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: var(--chlorophyll);
+  margin-bottom: 8px;
+}
+
+.progress-timeline {
+  display: flex;
+  gap: 6px;
+  align-items: center;
+  margin-bottom: 8px;
+  flex-wrap: wrap;
+}
+
+.progress-dot {
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  display: grid;
+  place-items: center;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  border: 2px solid rgba(239, 238, 225, 0.1);
+  font-size: 0.5rem;
+  font-family: 'IBM Plex Mono', monospace;
+  font-weight: 600;
+  position: relative;
+}
+
+.progress-dot.healthy {
+  background: rgba(168, 224, 138, 0.15);
+  color: var(--chlorophyll);
+  border-color: rgba(168, 224, 138, 0.3);
+}
+
+.progress-dot.healthy:hover {
+  background: rgba(168, 224, 138, 0.25);
+  border-color: var(--chlorophyll);
+  box-shadow: 0 0 8px rgba(168, 224, 138, 0.3);
+}
+
+.progress-dot.risk {
+  background: rgba(193, 87, 46, 0.15);
+  color: #f39d79;
+  border-color: rgba(193, 87, 46, 0.3);
+}
+
+.progress-dot.risk:hover {
+  background: rgba(193, 87, 46, 0.25);
+  border-color: #f39d79;
+  box-shadow: 0 0 8px rgba(193, 87, 46, 0.3);
+}
+
+.progress-value {
+  display: block;
+  line-height: 1;
+}
+
+.progress-legend {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  font-size: 0.72rem;
+  color: var(--mist-dim);
+}
+
+.progress-legend .latest { color: var(--mist); font-weight: 500; }
+
+.progress-legend .trend.healthy { color: var(--chlorophyll); }
+.progress-legend .trend.risk { color: #f39d79; }
+
 .log-head span { float: right; color: var(--chlorophyll); }
 .gallery-box {
   background: var(--canopy-mid);

@@ -300,7 +300,25 @@ function App() {
       const bytes = await blob.arrayBuffer()
       const digest = await crypto.subtle.digest('SHA-256', bytes)
       const imageHash = Array.from(new Uint8Array(digest), (byte) => byte.toString(16).padStart(2, '0')).join('')
-      const image = await saveGalleryImage(blob, { ...metadata, imageHash })
+      
+      // Analyze disease indicators from the image
+      const canvas = document.createElement('canvas')
+      const img = await new Promise((resolve, reject) => {
+        const image = new Image()
+        image.onload = () => resolve(image)
+        image.onerror = () => reject()
+        image.src = URL.createObjectURL(blob)
+      }).catch(() => null)
+      
+      let diseases = []
+      if (img) {
+        canvas.width = img.naturalWidth
+        canvas.height = img.naturalHeight
+        canvas.getContext('2d').drawImage(img, 0, 0)
+        diseases = analyzeDiseaseIndicators(canvas)
+      }
+
+      const image = await saveGalleryImage(blob, { ...metadata, imageHash, diseases })
       if (image.duplicate) return image
       const url = URL.createObjectURL(image.blob)
       galleryObjectUrls.current.push(url)
@@ -329,31 +347,103 @@ function App() {
     })))
   }
 
-  const getRecommendations = (isHealthy) => isHealthy
-    ? [
-        'Keep the current watering and light routine consistent.',
-        'Check leaves regularly for early discoloration or pests.',
-        'Keep airflow around the plant clear to reduce moisture buildup.',
-      ]
-    : [
-        'Inspect both sides of the leaves for pests, spots, or yellowing.',
-        'Check soil moisture and drainage before watering again.',
-        'Remove severely damaged leaves and compare a new scan soon.',
-        'Use an agronomist or soil test before applying treatment or fertilizer.',
-      ]
+  const analyzeDiseaseIndicators = (canvas) => {
+    const context = canvas.getContext('2d', { willReadFrequently: true })
+    const { data } = context.getImageData(0, 0, canvas.width, canvas.height)
+    let fungalPixels = 0
+    let bacterialPixels = 0
+    let pestPixels = 0
+    let nutrientPixels = 0
+    let visiblePixels = 0
 
-  const getCropRecommendations = (isHealthy, plantName) => {
+    for (let index = 0; index < data.length; index += 16) {
+      const red = data[index]
+      const green = data[index + 1]
+      const blue = data[index + 2]
+      const brightness = red + green + blue
+
+      if (brightness < 45) continue
+      visiblePixels += 1
+
+      // Fungal indicators: yellowish-brown, powdery look
+      if (red > 150 && green > 120 && green < red && blue < green) fungalPixels += 1
+
+      // Bacterial indicators: dark brown/black spots, water-soaked
+      if (red < 100 && green < 90 && blue < 85 && brightness > 30) bacterialPixels += 1
+
+      // Pest damage indicators: holes, irregular edges (high contrast areas)
+      if ((red > 200 || blue > 200) && Math.abs(red - green) > 50) pestPixels += 1
+
+      // Nutrient deficiency: yellow/pale leaves
+      if (red > 200 && green > 180 && blue < 100) nutrientPixels += 1
+    }
+
+    const fungalRatio = fungalPixels / Math.max(visiblePixels, 1)
+    const bacterialRatio = bacterialPixels / Math.max(visiblePixels, 1)
+    const pestRatio = pestPixels / Math.max(visiblePixels, 1)
+    const nutrientRatio = nutrientPixels / Math.max(visiblePixels, 1)
+
+    const diseases = []
+    if (fungalRatio > 0.05) diseases.push({ type: 'fungal', severity: Math.min(100, Math.round(fungalRatio * 500)), name: 'Fungal infection' })
+    if (bacterialRatio > 0.05) diseases.push({ type: 'bacterial', severity: Math.min(100, Math.round(bacterialRatio * 500)), name: 'Bacterial disease' })
+    if (pestRatio > 0.08) diseases.push({ type: 'pest', severity: Math.min(100, Math.round(pestRatio * 300)), name: 'Pest damage' })
+    if (nutrientRatio > 0.1) diseases.push({ type: 'nutrient', severity: Math.min(100, Math.round(nutrientRatio * 250)), name: 'Nutrient deficiency' })
+
+    return diseases.sort((a, b) => b.severity - a.severity)
+  }
+
+  const getRecommendations = (isHealthy, diseases = []) => {
+    const recommendations = []
+
+    if (isHealthy) {
+      recommendations.push('Keep the current watering and light routine consistent.')
+      recommendations.push('Check leaves regularly for early discoloration or pests.')
+      recommendations.push('Keep airflow around the plant clear to reduce moisture buildup.')
+    } else {
+      recommendations.push('Inspect both sides of the leaves for pests, spots, or yellowing.')
+      recommendations.push('Check soil moisture and drainage before watering again.')
+      recommendations.push('Remove severely damaged leaves and compare a new scan soon.')
+    }
+
+    // Disease-specific recommendations
+    diseases.forEach(({ type, name, severity }) => {
+      if (type === 'fungal') {
+        recommendations.push(`${name}: Reduce humidity and improve air circulation. Apply fungicide if >30% coverage.`)
+      } else if (type === 'bacterial') {
+        recommendations.push(`${name}: Remove infected leaves and sterilize tools. Avoid overhead watering.`)
+      } else if (type === 'pest') {
+        recommendations.push(`${name}: Scout for insects and mites. Use organic or synthetic control if populations are high.`)
+      } else if (type === 'nutrient') {
+        recommendations.push(`${name}: Conduct soil test for NPK levels. Consider foliar feeding for quick recovery.`)
+      }
+    })
+
+    if (!isHealthy && diseases.length === 0) {
+      recommendations.push('Use an agronomist or soil test before applying treatment or fertilizer.')
+    }
+
+    return recommendations
+  }
+
+  const getCropRecommendations = (isHealthy, plantName, diseases = []) => {
     const crop = plantName.toLowerCase()
-    const recommendations = getRecommendations(isHealthy)
+    const recommendations = getRecommendations(isHealthy, diseases)
 
-    if (crop.includes('tomato')) recommendations.push('For tomato plants, check leaf undersides for whitefly and keep foliage dry overnight.')
-    if (crop.includes('corn')) recommendations.push('For corn, inspect the whorl and lower leaves for chewing damage and nutrient striping.')
-    if (crop.includes('banana')) recommendations.push('For banana plants, check older leaves for fungal spots and keep the soil well drained.')
+    if (crop.includes('tomato')) recommendations.push('For tomato: Check leaf undersides for whitefly and spider mites. Keep foliage dry overnight to prevent fungal issues.')
+    if (crop.includes('corn')) recommendations.push('For corn: Inspect the whorl and lower leaves for chewing damage and nutrient striping. Watch for corn borer.')
+    if (crop.includes('banana')) recommendations.push('For banana: Check older leaves for fungal spots and keep soil well drained. Monitor for Panama disease.')
+    if (crop.includes('pepper')) recommendations.push('For pepper: Scout for phytophthora and anthracnose. Avoid overcrowding to improve airflow.')
+    if (crop.includes('potato')) recommendations.push('For potato: Monitor for late blight, early blight, and Colorado potato beetle. Improve drainage immediately.')
+    if (crop.includes('cactus') || crop.includes('succulent')) recommendations.push('For succulents: Ensure well-draining soil. Root rot is common in humid conditions; reduce watering.')
+    if (crop.includes('grape') || crop.includes('grapevine')) recommendations.push('For grapevine: Scout for powdery mildew and downy mildew. Prune for airflow in humid regions.')
+    if (crop.includes('fig')) recommendations.push('For fig: Watch for fig rust and root-knot nematodes. Ensure proper drainage and spacing.')
+
     return recommendations
   }
 
   const viewGalleryImage = (image) => {
     const isHealthy = image.status === 'healthy'
+    const diseases = image.diseases || []
     setSelectedGalleryImageId(image.id)
     setFeedImage(image.url)
     setStampText(isHealthy ? 'Healthy' : 'At Risk')
@@ -362,7 +452,7 @@ function App() {
     setReadoutLeft('saved scan result')
     setReadoutRight(`${image.confidence}% confidence`)
     setLastScan(`${image.confidence}%`)
-    setRecommendations(getCropRecommendations(isHealthy, image.plantName || 'Plant / crop'))
+    setRecommendations(getCropRecommendations(isHealthy, image.plantName || 'Plant / crop', diseases))
   }
 
   const handleConnect = async () => {
@@ -531,14 +621,15 @@ function App() {
       setFeedImage(URL.createObjectURL(blob))
       setStampVisible(false)
       const result = estimatePlantHealth(canvas)
+      const diseases = analyzeDiseaseIndicators(canvas)
       setReadoutLeft('visual health screening complete')
       setReadoutRight('visual health score')
       setHintText('screening estimate only: confirm results with an agronomist or trained model')
-      const savedImage = await addGalleryImage(blob, { source: 'device camera', plantName: validation.plantName, status: result.isHealthy ? 'healthy' : 'risk', confidence: result.confidence })
+      const savedImage = await addGalleryImage(blob, { source: 'device camera', plantName: validation.plantName, status: result.isHealthy ? 'healthy' : 'risk', confidence: result.confidence, diseases })
       if (savedImage?.duplicate) {
         setUploadError('This camera image is already in the gallery.')
       }
-      showResult(result.isHealthy, result.confidence, validation.plantName)
+      showResult(result.isHealthy, result.confidence, validation.plantName, diseases)
     }, 'image/jpeg', 0.9)
   }
 
@@ -570,14 +661,16 @@ function App() {
       }
 
       const result = estimatePlantHealth(canvas)
+      const diseases = analyzeDiseaseIndicators(canvas)
       const imageRecord = await addGalleryImage(file, {
         source: 'device gallery',
         plantName: validation.plantName,
         status: result.isHealthy ? 'healthy' : 'risk',
         confidence: result.confidence,
+        diseases,
       })
       if (imageRecord?.duplicate) return { error: 'This image is already in the gallery.' }
-      return imageRecord ? { image: imageRecord, result, plantName: validation.plantName } : { error: 'shared gallery setup incomplete' }
+      return imageRecord ? { image: imageRecord, result, plantName: validation.plantName, diseases } : { error: 'shared gallery setup incomplete' }
     } catch {
       return { error: 'plant checker unavailable' }
     } finally {
@@ -625,7 +718,7 @@ function App() {
     setReadoutLeft(`${results.length} plant image${results.length === 1 ? '' : 's'} added`)
     setReadoutRight('visual health score')
     setHintText('screening estimate only: confirm results with an agronomist or trained model')
-    showResult(lastResult.result.isHealthy, lastResult.result.confidence, lastResult.plantName)
+    showResult(lastResult.result.isHealthy, lastResult.result.confidence, lastResult.plantName, lastResult.diseases || [])
   }
 
   const logScan = (isHealthy, confidence) => {
@@ -638,7 +731,7 @@ function App() {
     setLogs((prev) => [entry, ...prev].slice(0, 4))
   }
 
-  const showResult = (isHealthy, confidence, plantName = 'Plant / crop') => {
+  const showResult = (isHealthy, confidence, plantName = 'Plant / crop', diseases = []) => {
     setTimeout(() => {
       scanInProgress.current = false
       setStampText(isHealthy ? 'Healthy' : 'At Risk')
@@ -648,8 +741,8 @@ function App() {
       setReadoutRight(`${confidence}% confidence`)
       setShutterDisabled(false)
       setLastScan(`${confidence}%`)
-      setRecommendations(getCropRecommendations(isHealthy, plantName))
-      trackEvent('plant_scan_completed', { status: isHealthy ? 'healthy' : 'at_risk', plant_name: plantName })
+      setRecommendations(getCropRecommendations(isHealthy, plantName, diseases))
+      trackEvent('plant_scan_completed', { status: isHealthy ? 'healthy' : 'at_risk', plant_name: plantName, disease_count: diseases.length })
       logScan(isHealthy, confidence)
     }, 1000)
   }
@@ -716,8 +809,27 @@ function App() {
       })
   }
 
+  const getProgressData = () => {
+    const plantGroups = {}
+    gallery.forEach((image) => {
+      const plant = image.plantName || 'Plant / crop'
+      if (!plantGroups[plant]) {
+        plantGroups[plant] = []
+      }
+      plantGroups[plant].push({
+        date: new Date(image.createdAt).toLocaleDateString([], { month: 'short', day: 'numeric' }),
+        time: new Date(image.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+        confidence: image.confidence,
+        status: image.status,
+        diseases: image.diseases || [],
+      })
+    })
+    return plantGroups
+  }
+
   const selectedPlantName = gallery.find((image) => image.id === selectedGalleryImageId)?.plantName
   const scanCount = gallery.length
+  const progressData = getProgressData()
 
   return (
     <>
@@ -893,6 +1005,36 @@ function App() {
                       <li key={recommendation}>{recommendation}</li>
                     ))}
                   </ul>
+                )}
+              </div>
+
+              <div className="progress-box">
+                <div className="log-head">Health progress tracker</div>
+                {Object.keys(progressData).length === 0 ? (
+                  <p>Scan the same plant multiple times to track its health progress.</p>
+                ) : (
+                  <div className="progress-tracker">
+                    {Object.entries(progressData).slice(0, 3).map(([plant, scans]) => (
+                      <div key={plant} className="progress-plant">
+                        <div className="progress-plant-name">{plant}</div>
+                        <div className="progress-timeline">
+                          {scans.slice(0, 6).map((scan, idx) => (
+                            <div
+                              key={idx}
+                              className={`progress-dot ${scan.status}`}
+                              title={`${scan.date} ${scan.time} - ${scan.confidence}% confidence${scan.diseases.length > 0 ? ` - ${scan.diseases.length} issue(s) detected` : ''}`}
+                            >
+                              <span className="progress-value">{scan.confidence}%</span>
+                            </div>
+                          ))}
+                        </div>
+                        <div className="progress-legend">
+                          <span className="latest">Latest: {scans[0].date}</span>
+                          <span className={`trend ${scans[0].status}`}>{scans[0].status === 'healthy' ? '✓ Healthy' : '⚠ At Risk'}</span>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
                 )}
               </div>
 
