@@ -164,8 +164,10 @@ function App() {
   const [uploadError, setUploadError] = useState('')
   const [shutterDisabled, setShutterDisabled] = useState(true)
   const [activeNavSection, setActiveNavSection] = useState('overview')
+  const [showGalleryHint, setShowGalleryHint] = useState(false)
   const videoRef = useRef(null)
   const fileInputRef = useRef(null)
+  const galleryBoxRef = useRef(null)
   const deviceCameraStream = useRef(null)
   const plantModel = useRef(null)
   const faceModel = useRef(null)
@@ -476,6 +478,15 @@ function App() {
     setReadoutRight(`${image.confidence}% confidence`)
     setLastScan(`${image.confidence}%`)
     setRecommendations(getCropRecommendations(isHealthy, image.plantName || 'Plant / crop', diseases))
+    
+    // Scroll to gallery and show hint
+    setTimeout(() => {
+      if (galleryBoxRef.current) {
+        galleryBoxRef.current.scrollIntoView({ behavior: 'smooth', block: 'start' })
+        setShowGalleryHint(true)
+        setTimeout(() => setShowGalleryHint(false), 3000)
+      }
+    }, 100)
   }
 
   const handleConnect = async () => {
@@ -1105,8 +1116,13 @@ function App() {
                 )}
               </div>
 
-              <div className="gallery-box">
+              <div className="gallery-box" ref={galleryBoxRef}>
                 <div className="log-head">Plant gallery <span>{gallery.length} saved</span></div>
+                {showGalleryHint && (
+                  <div className="gallery-hint" aria-live="polite" role="status">
+                    ✓ Image selected — scroll above to view details in the timeline
+                  </div>
+                )}
                 {gallery.length === 0 ? (
                   <p className="gallery-empty">Accepted plant captures will appear here.</p>
                 ) : (

@@ -857,6 +857,30 @@ nav {
   padding: 16px 18px;
 }
 
+.gallery-hint {
+  animation: slideInDown 0.3s ease;
+  margin-bottom: 12px;
+  padding: 10px 14px;
+  background: rgba(168, 224, 138, 0.12);
+  border: 1px solid rgba(168, 224, 138, 0.3);
+  border-radius: 10px;
+  color: var(--chlorophyll);
+  font-size: 0.8rem;
+  font-weight: 500;
+  text-align: center;
+}
+
+@keyframes slideInDown {
+  from {
+    opacity: 0;
+    transform: translateY(-10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
 .gallery-empty { margin: 0; color: var(--mist-dim); font-size: 0.84rem; }
 .gallery-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 10px; }
 .gallery-item { overflow: hidden; border: 1px solid rgba(239, 238, 225, 0.1); border-radius: 10px; background: rgba(255, 255, 255, 0.03); cursor: pointer; }
