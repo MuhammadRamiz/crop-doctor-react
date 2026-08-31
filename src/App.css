@@ -138,10 +138,22 @@ nav {
   font-size: 0.88rem;
   font-weight: 500;
   color: var(--mist-dim);
-  transition: color 0.2s ease;
+  transition: color 0.2s ease, border-bottom 0.2s ease;
+  padding-bottom: 4px;
+  border-bottom: 2px solid transparent;
+  display: block;
 }
 
-.nav-links a:hover { color: var(--chlorophyll); }
+.nav-links a:hover { 
+  color: var(--chlorophyll);
+  border-bottom-color: var(--chlorophyll);
+}
+
+.nav-links a.active {
+  color: var(--chlorophyll);
+  border-bottom-color: var(--chlorophyll);
+  font-weight: 600;
+}
 
 .hamburger {
   display: none;

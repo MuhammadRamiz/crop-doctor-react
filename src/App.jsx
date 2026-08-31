@@ -163,6 +163,7 @@ function App() {
   const [supabaseConnected, setSupabaseConnected] = useState(false)
   const [uploadError, setUploadError] = useState('')
   const [shutterDisabled, setShutterDisabled] = useState(true)
+  const [activeNavSection, setActiveNavSection] = useState('overview')
   const videoRef = useRef(null)
   const fileInputRef = useRef(null)
   const deviceCameraStream = useRef(null)
@@ -280,6 +281,28 @@ function App() {
     }
     
     checkSupabaseConnection()
+  }, [])
+
+  useEffect(() => {
+    const handleScroll = () => {
+      const sections = ['overview', 'how-it-works', 'benefits', 'team', 'contact']
+      let currentSection = 'overview'
+
+      for (const section of sections) {
+        const element = document.getElementById(section)
+        if (element) {
+          const rect = element.getBoundingClientRect()
+          if (rect.top <= 100) {
+            currentSection = section
+          }
+        }
+      }
+
+      setActiveNavSection(currentSection)
+    }
+
+    window.addEventListener('scroll', handleScroll)
+    return () => window.removeEventListener('scroll', handleScroll)
   }, [])
 
   const setConnectedState = (nextConnected, ip = deviceIP) => {
@@ -824,6 +847,12 @@ function App() {
         diseases: image.diseases || [],
       })
     })
+    
+    // If a plant is selected, show only that plant's data; otherwise show all
+    if (selectedPlantName) {
+      return { [selectedPlantName]: plantGroups[selectedPlantName] || [] }
+    }
+    
     return plantGroups
   }
 
@@ -844,7 +873,15 @@ function App() {
 
           <ul className="nav-links">
             {navItems.map((item) => (
-              <li key={item}><a href={`#${navTargets[item]}`}>{item}</a></li>
+              <li key={item}>
+                <a 
+                  href={`#${navTargets[item]}`}
+                  className={activeNavSection === navTargets[item] ? 'active' : ''}
+                  onClick={() => setActiveNavSection(navTargets[item])}
+                >
+                  {item}
+                </a>
+              </li>
             ))}
           </ul>
 
@@ -1009,16 +1046,19 @@ function App() {
               </div>
 
               <div className="progress-box">
-                <div className="log-head">Health progress tracker</div>
+                <div className="log-head">
+                  {selectedPlantName ? `Health timeline · ${selectedPlantName}` : 'Health progress tracker'}
+                  {selectedPlantName && <span style={{ opacity: 0.6, fontSize: '0.75rem' }}>Select another plant to view</span>}
+                </div>
                 {Object.keys(progressData).length === 0 ? (
-                  <p>Scan the same plant multiple times to track its health progress.</p>
+                  <p>{selectedPlantName ? `No history yet for ${selectedPlantName}. Scan this plant again to build a progress timeline.` : 'Scan the same plant multiple times to track its health progress over time.'}</p>
                 ) : (
                   <div className="progress-tracker">
-                    {Object.entries(progressData).slice(0, 3).map(([plant, scans]) => (
+                    {Object.entries(progressData).map(([plant, scans]) => (
                       <div key={plant} className="progress-plant">
-                        <div className="progress-plant-name">{plant}</div>
+                        {!selectedPlantName && <div className="progress-plant-name">{plant}</div>}
                         <div className="progress-timeline">
-                          {scans.slice(0, 6).map((scan, idx) => (
+                          {scans.slice(0, 8).map((scan, idx) => (
                             <div
                               key={idx}
                               className={`progress-dot ${scan.status}`}
