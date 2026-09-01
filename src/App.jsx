@@ -16,11 +16,7 @@ const navTargets = {
   Contact: 'contact',
 }
 
-const badgeItems = [
-  'AI crop grader',
-  'Plant stress detection',
-  'Field-ready scan',
-]
+const badgeItems = ['AI crop grader', 'Plant stress detection', 'Field-ready scan']
 
 const howItems = [
   {
@@ -77,13 +73,77 @@ const builtWith = ['ESP32-CAM', 'ReactJS', 'Generative AI', 'AI / ML', 'HTML/CSS
 const MAX_IMAGE_SIZE = 10 * 1024 * 1024
 const SUPPORTED_IMAGE_TYPES = ['image/jpeg', 'image/png', 'image/webp']
 const plantLabels = [
-  'plant', 'leaf', 'tree', 'flower', 'vegetable', 'fruit', 'corn', 'broccoli', 'cauliflower', 'cucumber',
-  'zucchini', 'squash', 'pepper', 'potato', 'banana', 'pineapple', 'strawberry', 'orange', 'lemon', 'fig',
-  'vine', 'greenhouse', 'daisy', 'rose', 'sunflower', 'cactus', 'succulent', 'aloe', 'agave', 'jade', 'fern',
-  'palm', 'orchid', 'monstera', 'bamboo', 'ivy', 'spider plant', 'prickly pear', 'bonsai', 'herb', 'bush', 'shrub',
-  'tree trunk', 'grass', 'grape', 'olive', 'pepper plant', 'tomato', 'tomato plant', 'rose bush', 'cane', 'berry'
+  'plant',
+  'leaf',
+  'tree',
+  'flower',
+  'vegetable',
+  'fruit',
+  'corn',
+  'broccoli',
+  'cauliflower',
+  'cucumber',
+  'zucchini',
+  'squash',
+  'pepper',
+  'potato',
+  'banana',
+  'pineapple',
+  'strawberry',
+  'orange',
+  'lemon',
+  'fig',
+  'vine',
+  'greenhouse',
+  'daisy',
+  'rose',
+  'sunflower',
+  'cactus',
+  'succulent',
+  'aloe',
+  'agave',
+  'jade',
+  'fern',
+  'palm',
+  'orchid',
+  'monstera',
+  'bamboo',
+  'ivy',
+  'spider plant',
+  'prickly pear',
+  'bonsai',
+  'herb',
+  'bush',
+  'shrub',
+  'tree trunk',
+  'grass',
+  'grape',
+  'olive',
+  'pepper plant',
+  'tomato',
+  'tomato plant',
+  'rose bush',
+  'cane',
+  'berry',
 ]
-const genericPlantLabels = ['plant', 'leaf', 'tree', 'flower', 'vegetable', 'fruit', 'hip', 'pot', 'flowerpot', 'vine', 'greenhouse', 'shrub', 'bush', 'bushes', 'grass', 'grass family']
+const genericPlantLabels = [
+  'plant',
+  'leaf',
+  'tree',
+  'flower',
+  'vegetable',
+  'fruit',
+  'hip',
+  'pot',
+  'flowerpot',
+  'vine',
+  'greenhouse',
+  'shrub',
+  'bush',
+  'bushes',
+  'grass',
+  'grass family',
+]
 const recognizedPlantNames = [
   { keywords: ['cactus', 'succulent', 'echeveria', 'prickly pear', 'aloe', 'agave', 'jade'], label: 'Cactus' },
   { keywords: ['palm', 'palm tree', 'date palm', 'coconut palm'], label: 'Palm tree' },
@@ -110,7 +170,10 @@ const formatPlantName = (className) => {
   const mapped = recognizedPlantNames.find(({ keywords }) => keywords.some((keyword) => normalized.includes(keyword)))
   if (mapped) return mapped.label
 
-  return name.split(' ').map((word) => word ? word.charAt(0).toUpperCase() + word.slice(1) : word).join(' ')
+  return name
+    .split(' ')
+    .map((word) => (word ? word.charAt(0).toUpperCase() + word.slice(1) : word))
+    .join(' ')
 }
 
 const hasVegetationColor = (canvas) => {
@@ -132,7 +195,9 @@ const hasVegetationColor = (canvas) => {
 }
 
 const defaultDemoLeaf = (() => {
-  return 'data:image/svg+xml;utf8,' + encodeURIComponent(`
+  return (
+    'data:image/svg+xml;utf8,' +
+    encodeURIComponent(`
     <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 300 225">
       <rect width="300" height="225" fill="#21382b"/>
       <path d="M150 30 C90 60 65 110 65 150 A85 85 0 00235 150 C235 110 210 60 150 30Z" fill="#4F7A5D"/>
@@ -140,6 +205,7 @@ const defaultDemoLeaf = (() => {
       <path d="M150 70 L110 95 M150 95 L190 120 M150 120 L112 145 M150 145 L188 168" stroke="#0F2016" stroke-width="1.2" fill="none"/>
     </svg>
   `)
+  )
 })()
 
 function App() {
@@ -180,9 +246,12 @@ function App() {
   const CAPTURE_PATH = (ip) => `http://${ip}/capture`
   const HEALTH_PATH = (ip) => `http://${ip}/health`
 
-  useEffect(() => () => {
-    deviceCameraStream.current?.getTracks().forEach((track) => track.stop())
-  }, [])
+  useEffect(
+    () => () => {
+      deviceCameraStream.current?.getTracks().forEach((track) => track.stop())
+    },
+    []
+  )
 
   useEffect(() => {
     if (!deviceCameraActive || !deviceCameraStream.current || !videoRef.current) return undefined
@@ -210,23 +279,23 @@ function App() {
       import('@tensorflow/tfjs-backend-cpu'),
       import('@tensorflow-models/mobilenet'),
       import('@tensorflow-models/blazeface'),
-    ]).then(async ([tf, , , { load }, { load: loadFaceModel }]) => {
-      await tf.setBackend('webgl').catch(() => tf.setBackend('cpu'))
-      await tf.ready()
-      const [model, detectedFaceModel] = await Promise.all([
-        load({ version: 2, alpha: 1.0 }),
-        loadFaceModel(),
-      ])
-      return { model, detectedFaceModel }
-    }).then(({ model, detectedFaceModel }) => {
-      if (!cancelled) {
-        plantModel.current = model
-        faceModel.current = detectedFaceModel
-        setClassifierStatus('ready')
-      }
-    }).catch(() => {
-      if (!cancelled) setClassifierStatus('unavailable')
-    })
+    ])
+      .then(async ([tf, , , { load }, { load: loadFaceModel }]) => {
+        await tf.setBackend('webgl').catch(() => tf.setBackend('cpu'))
+        await tf.ready()
+        const [model, detectedFaceModel] = await Promise.all([load({ version: 2, alpha: 1.0 }), loadFaceModel()])
+        return { model, detectedFaceModel }
+      })
+      .then(({ model, detectedFaceModel }) => {
+        if (!cancelled) {
+          plantModel.current = model
+          faceModel.current = detectedFaceModel
+          setClassifierStatus('ready')
+        }
+      })
+      .catch(() => {
+        if (!cancelled) setClassifierStatus('unavailable')
+      })
 
     return () => {
       cancelled = true
@@ -236,23 +305,27 @@ function App() {
   useEffect(() => {
     let active = true
     const objectUrls = galleryObjectUrls.current
-    getGalleryImages().then((images) => {
-      if (!active) return
-      console.log(`🖼️ Loaded ${images.length} images into gallery`)
-      setLogs(images.slice(0, 4).map((image) => ({
-        isHealthy: image.status === 'healthy',
-        confidence: image.confidence,
-        time: new Date(image.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
-      })))
-      const items = images.map((image) => {
-        const url = URL.createObjectURL(image.blob)
-        objectUrls.push(url)
-        return { ...image, url }
+    getGalleryImages()
+      .then((images) => {
+        if (!active) return
+        console.log(`🖼️ Loaded ${images.length} images into gallery`)
+        setLogs(
+          images.slice(0, 4).map((image) => ({
+            isHealthy: image.status === 'healthy',
+            confidence: image.confidence,
+            time: new Date(image.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+          }))
+        )
+        const items = images.map((image) => {
+          const url = URL.createObjectURL(image.blob)
+          objectUrls.push(url)
+          return { ...image, url }
+        })
+        setGallery(items)
       })
-      setGallery(items)
-    }).catch((error) => {
-      console.error('❌ Error loading gallery images:', error)
-    })
+      .catch((error) => {
+        console.error('❌ Error loading gallery images:', error)
+      })
 
     return () => {
       active = false
@@ -266,24 +339,25 @@ function App() {
       const envUrl = import.meta.env.VITE_SUPABASE_URL
       const envKey = import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY
       const runtimeConfig = window.SUPABASE_CONFIG
-      
+
       const hasEnvUrl = !!envUrl
       const hasEnvKey = !!envKey
       const hasRuntimeConfig = !!(runtimeConfig?.url && runtimeConfig?.key)
-      
-      const isConnected = hasEnvUrl && hasEnvKey || hasRuntimeConfig
+
+      const isConnected = (hasEnvUrl && hasEnvKey) || hasRuntimeConfig
       setSupabaseConnected(isConnected)
-      
-      console.log('🔌 Supabase connection status:', { 
-        hasEnvUrl, 
-        hasEnvKey, 
+
+      console.log('🔌 Supabase connection status:', {
+        hasEnvUrl,
+        hasEnvKey,
         hasRuntimeConfig,
         isConnected,
-        source: hasEnvUrl && hasEnvKey ? 'environment' : (hasRuntimeConfig ? 'runtime' : 'none'),
-        urlPrefix: (hasEnvUrl ? envUrl : (hasRuntimeConfig ? runtimeConfig.url : null))?.substring(0, 20) + '...' || 'none'
+        source: hasEnvUrl && hasEnvKey ? 'environment' : hasRuntimeConfig ? 'runtime' : 'none',
+        urlPrefix:
+          (hasEnvUrl ? envUrl : hasRuntimeConfig ? runtimeConfig.url : null)?.substring(0, 20) + '...' || 'none',
       })
     }
-    
+
     checkSupabaseConnection()
   }, [])
 
@@ -313,9 +387,7 @@ function App() {
     setConnected(nextConnected)
     setShutterDisabled(!nextConnected)
     setHintText(
-      nextConnected
-        ? 'aim at the plant, then press the shutter'
-        : 'connect to your camera to enable the shutter',
+      nextConnected ? 'aim at the plant, then press the shutter' : 'connect to your camera to enable the shutter'
     )
     setCameraStatus(nextConnected ? 'ONLINE' : 'OFFLINE')
     setReadoutLeft(nextConnected ? 'live feed connected' : 'device disconnected')
@@ -327,7 +399,7 @@ function App() {
       const bytes = await blob.arrayBuffer()
       const digest = await crypto.subtle.digest('SHA-256', bytes)
       const imageHash = Array.from(new Uint8Array(digest), (byte) => byte.toString(16).padStart(2, '0')).join('')
-      
+
       // Analyze disease indicators from the image
       const canvas = document.createElement('canvas')
       const img = await new Promise((resolve, reject) => {
@@ -336,7 +408,7 @@ function App() {
         image.onerror = () => reject()
         image.src = URL.createObjectURL(blob)
       }).catch(() => null)
-      
+
       let diseases = []
       if (img) {
         canvas.width = img.naturalWidth
@@ -367,11 +439,13 @@ function App() {
       setSelectedGalleryImageId(null)
       setRecommendations([])
     }
-    setLogs(remainingImages.slice(0, 4).map((item) => ({
-      isHealthy: item.status === 'healthy',
-      confidence: item.confidence,
-      time: new Date(item.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
-    })))
+    setLogs(
+      remainingImages.slice(0, 4).map((item) => ({
+        isHealthy: item.status === 'healthy',
+        confidence: item.confidence,
+        time: new Date(item.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+      }))
+    )
   }
 
   const analyzeDiseaseIndicators = (canvas) => {
@@ -411,10 +485,26 @@ function App() {
     const nutrientRatio = nutrientPixels / Math.max(visiblePixels, 1)
 
     const diseases = []
-    if (fungalRatio > 0.05) diseases.push({ type: 'fungal', severity: Math.min(100, Math.round(fungalRatio * 500)), name: 'Fungal infection' })
-    if (bacterialRatio > 0.05) diseases.push({ type: 'bacterial', severity: Math.min(100, Math.round(bacterialRatio * 500)), name: 'Bacterial disease' })
-    if (pestRatio > 0.08) diseases.push({ type: 'pest', severity: Math.min(100, Math.round(pestRatio * 300)), name: 'Pest damage' })
-    if (nutrientRatio > 0.1) diseases.push({ type: 'nutrient', severity: Math.min(100, Math.round(nutrientRatio * 250)), name: 'Nutrient deficiency' })
+    if (fungalRatio > 0.05)
+      diseases.push({
+        type: 'fungal',
+        severity: Math.min(100, Math.round(fungalRatio * 500)),
+        name: 'Fungal infection',
+      })
+    if (bacterialRatio > 0.05)
+      diseases.push({
+        type: 'bacterial',
+        severity: Math.min(100, Math.round(bacterialRatio * 500)),
+        name: 'Bacterial disease',
+      })
+    if (pestRatio > 0.08)
+      diseases.push({ type: 'pest', severity: Math.min(100, Math.round(pestRatio * 300)), name: 'Pest damage' })
+    if (nutrientRatio > 0.1)
+      diseases.push({
+        type: 'nutrient',
+        severity: Math.min(100, Math.round(nutrientRatio * 250)),
+        name: 'Nutrient deficiency',
+      })
 
     return diseases.sort((a, b) => b.severity - a.severity)
   }
@@ -439,7 +529,9 @@ function App() {
       } else if (type === 'bacterial') {
         recommendations.push(`${name}: Remove infected leaves and sterilize tools. Avoid overhead watering.`)
       } else if (type === 'pest') {
-        recommendations.push(`${name}: Scout for insects and mites. Use organic or synthetic control if populations are high.`)
+        recommendations.push(
+          `${name}: Scout for insects and mites. Use organic or synthetic control if populations are high.`
+        )
       } else if (type === 'nutrient') {
         recommendations.push(`${name}: Conduct soil test for NPK levels. Consider foliar feeding for quick recovery.`)
       }
@@ -456,14 +548,34 @@ function App() {
     const crop = plantName.toLowerCase()
     const recommendations = getRecommendations(isHealthy, diseases)
 
-    if (crop.includes('tomato')) recommendations.push('For tomato: Check leaf undersides for whitefly and spider mites. Keep foliage dry overnight to prevent fungal issues.')
-    if (crop.includes('corn')) recommendations.push('For corn: Inspect the whorl and lower leaves for chewing damage and nutrient striping. Watch for corn borer.')
-    if (crop.includes('banana')) recommendations.push('For banana: Check older leaves for fungal spots and keep soil well drained. Monitor for Panama disease.')
-    if (crop.includes('pepper')) recommendations.push('For pepper: Scout for phytophthora and anthracnose. Avoid overcrowding to improve airflow.')
-    if (crop.includes('potato')) recommendations.push('For potato: Monitor for late blight, early blight, and Colorado potato beetle. Improve drainage immediately.')
-    if (crop.includes('cactus') || crop.includes('succulent')) recommendations.push('For succulents: Ensure well-draining soil. Root rot is common in humid conditions; reduce watering.')
-    if (crop.includes('grape') || crop.includes('grapevine')) recommendations.push('For grapevine: Scout for powdery mildew and downy mildew. Prune for airflow in humid regions.')
-    if (crop.includes('fig')) recommendations.push('For fig: Watch for fig rust and root-knot nematodes. Ensure proper drainage and spacing.')
+    if (crop.includes('tomato'))
+      recommendations.push(
+        'For tomato: Check leaf undersides for whitefly and spider mites. Keep foliage dry overnight to prevent fungal issues.'
+      )
+    if (crop.includes('corn'))
+      recommendations.push(
+        'For corn: Inspect the whorl and lower leaves for chewing damage and nutrient striping. Watch for corn borer.'
+      )
+    if (crop.includes('banana'))
+      recommendations.push(
+        'For banana: Check older leaves for fungal spots and keep soil well drained. Monitor for Panama disease.'
+      )
+    if (crop.includes('pepper'))
+      recommendations.push('For pepper: Scout for phytophthora and anthracnose. Avoid overcrowding to improve airflow.')
+    if (crop.includes('potato'))
+      recommendations.push(
+        'For potato: Monitor for late blight, early blight, and Colorado potato beetle. Improve drainage immediately.'
+      )
+    if (crop.includes('cactus') || crop.includes('succulent'))
+      recommendations.push(
+        'For succulents: Ensure well-draining soil. Root rot is common in humid conditions; reduce watering.'
+      )
+    if (crop.includes('grape') || crop.includes('grapevine'))
+      recommendations.push(
+        'For grapevine: Scout for powdery mildew and downy mildew. Prune for airflow in humid regions.'
+      )
+    if (crop.includes('fig'))
+      recommendations.push('For fig: Watch for fig rust and root-knot nematodes. Ensure proper drainage and spacing.')
 
     return recommendations
   }
@@ -480,7 +592,7 @@ function App() {
     setReadoutRight(`${image.confidence}% confidence`)
     setLastScan(`${image.confidence}%`)
     setRecommendations(getCropRecommendations(isHealthy, image.plantName || 'Plant / crop', diseases))
-    
+
     // Scroll to gallery and show hint
     setTimeout(() => {
       if (galleryBoxRef.current) {
@@ -558,13 +670,16 @@ function App() {
   }
 
   const validatePlantFrame = async (canvas) => {
-    if (!plantModel.current || !faceModel.current) return { accepted: false, reason: classifierStatus === 'loading' ? 'plant checker is still loading' : 'plant checker unavailable' }
+    if (!plantModel.current || !faceModel.current)
+      return {
+        accepted: false,
+        reason: classifierStatus === 'loading' ? 'plant checker is still loading' : 'plant checker unavailable',
+      }
 
     const faces = await faceModel.current.estimateFaces(canvas, false)
     const confidentFace = faces.some((face) => {
-      const probability = typeof face.probability?.dataSync === 'function'
-        ? face.probability.dataSync()[0]
-        : face.probability
+      const probability =
+        typeof face.probability?.dataSync === 'function' ? face.probability.dataSync()[0] : face.probability
       return probability >= 0.9
     })
     if (confidentFace) return { accepted: false, reason: 'person detected · frame rejected' }
@@ -578,7 +693,11 @@ function App() {
     const plantPrediction = predictions
       .filter(({ className, probability }) => {
         const label = className.toLowerCase()
-        return probability >= 0.12 && plantLabels.some((term) => label.includes(term)) && !genericPlantLabels.includes(label.split(',')[0].trim())
+        return (
+          probability >= 0.12 &&
+          plantLabels.some((term) => label.includes(term)) &&
+          !genericPlantLabels.includes(label.split(',')[0].trim())
+        )
       })
       .sort((first, second) => second.probability - first.probability)[0]
 
@@ -649,24 +768,34 @@ function App() {
       return
     }
 
-    canvas.toBlob(async (blob) => {
-      if (!blob) {
-        rejectFrame('could not capture camera frame')
-        return
-      }
-      setFeedImage(URL.createObjectURL(blob))
-      setStampVisible(false)
-      const result = estimatePlantHealth(canvas)
-      const diseases = analyzeDiseaseIndicators(canvas)
-      setReadoutLeft('visual health screening complete')
-      setReadoutRight('visual health score')
-      setHintText('screening estimate only: confirm results with an agronomist or trained model')
-      const savedImage = await addGalleryImage(blob, { source: 'device camera', plantName: validation.plantName, status: result.isHealthy ? 'healthy' : 'risk', confidence: result.confidence, diseases })
-      if (savedImage?.duplicate) {
-        setUploadError('This camera image is already in the gallery.')
-      }
-      showResult(result.isHealthy, result.confidence, validation.plantName, diseases)
-    }, 'image/jpeg', 0.9)
+    canvas.toBlob(
+      async (blob) => {
+        if (!blob) {
+          rejectFrame('could not capture camera frame')
+          return
+        }
+        setFeedImage(URL.createObjectURL(blob))
+        setStampVisible(false)
+        const result = estimatePlantHealth(canvas)
+        const diseases = analyzeDiseaseIndicators(canvas)
+        setReadoutLeft('visual health screening complete')
+        setReadoutRight('visual health score')
+        setHintText('screening estimate only: confirm results with an agronomist or trained model')
+        const savedImage = await addGalleryImage(blob, {
+          source: 'device camera',
+          plantName: validation.plantName,
+          status: result.isHealthy ? 'healthy' : 'risk',
+          confidence: result.confidence,
+          diseases,
+        })
+        if (savedImage?.duplicate) {
+          setUploadError('This camera image is already in the gallery.')
+        }
+        showResult(result.isHealthy, result.confidence, validation.plantName, diseases)
+      },
+      'image/jpeg',
+      0.9
+    )
   }
 
   const processSelectedImage = async (file) => {
@@ -693,7 +822,12 @@ function App() {
 
       const validation = await validatePlantFrame(canvas)
       if (!validation.accepted) {
-        return { error: validation.reason === 'plant or crop not detected' ? 'Only clear plant or crop images are supported.' : validation.reason }
+        return {
+          error:
+            validation.reason === 'plant or crop not detected'
+              ? 'Only clear plant or crop images are supported.'
+              : validation.reason,
+        }
       }
 
       const result = estimatePlantHealth(canvas)
@@ -706,7 +840,9 @@ function App() {
         diseases,
       })
       if (imageRecord?.duplicate) return { error: 'This image is already in the gallery.' }
-      return imageRecord ? { image: imageRecord, result, plantName: validation.plantName, diseases } : { error: 'shared gallery setup incomplete' }
+      return imageRecord
+        ? { image: imageRecord, result, plantName: validation.plantName, diseases }
+        : { error: 'shared gallery setup incomplete' }
     } catch {
       return { error: 'plant checker unavailable' }
     } finally {
@@ -739,7 +875,9 @@ function App() {
         const count = rejectedFiles.filter((file) => file.error === error).length
         return `${count} image${count === 1 ? '' : 's'}: ${error}`
       })
-      setUploadError(`${files.length} selected · ${results.length} added · ${rejectedFiles.length} rejected. ${summaries.join(' ')}`)
+      setUploadError(
+        `${files.length} selected · ${results.length} added · ${rejectedFiles.length} rejected. ${summaries.join(' ')}`
+      )
     } else {
       setUploadError(`${files.length} selected · ${results.length} added`)
     }
@@ -754,7 +892,12 @@ function App() {
     setReadoutLeft(`${results.length} plant image${results.length === 1 ? '' : 's'} added`)
     setReadoutRight('visual health score')
     setHintText('screening estimate only: confirm results with an agronomist or trained model')
-    showResult(lastResult.result.isHealthy, lastResult.result.confidence, lastResult.plantName, lastResult.diseases || [])
+    showResult(
+      lastResult.result.isHealthy,
+      lastResult.result.confidence,
+      lastResult.plantName,
+      lastResult.diseases || []
+    )
   }
 
   const logScan = (isHealthy, confidence) => {
@@ -778,7 +921,11 @@ function App() {
       setShutterDisabled(false)
       setLastScan(`${confidence}%`)
       setRecommendations(getCropRecommendations(isHealthy, plantName, diseases))
-      trackEvent('plant_scan_completed', { status: isHealthy ? 'healthy' : 'at_risk', plant_name: plantName, disease_count: diseases.length })
+      trackEvent('plant_scan_completed', {
+        status: isHealthy ? 'healthy' : 'at_risk',
+        plant_name: plantName,
+        disease_count: diseases.length,
+      })
       logScan(isHealthy, confidence)
     }, 1000)
   }
@@ -837,7 +984,12 @@ function App() {
         }
 
         const plantName = data.plantName || data.cropName || data.plant || 'Plant / crop'
-        void addGalleryImage(blob, { source: 'ESP32-CAM', plantName, status: data.status === 'healthy' ? 'healthy' : 'risk', confidence: data.confidence })
+        void addGalleryImage(blob, {
+          source: 'ESP32-CAM',
+          plantName,
+          status: data.status === 'healthy' ? 'healthy' : 'risk',
+          confidence: data.confidence,
+        })
         showResult(data.status === 'healthy', data.confidence, plantName)
       })
       .catch(() => {
@@ -862,12 +1014,12 @@ function App() {
         createdAt: image.createdAt,
       })
     })
-    
+
     // If a plant is selected, show only that plant's data; otherwise show all
     if (selectedPlantName) {
       return { [selectedPlantName]: plantGroups[selectedPlantName] || [] }
     }
-    
+
     return plantGroups
   }
 
@@ -886,7 +1038,14 @@ function App() {
         title="Upload plant image (mobile)"
         aria-label="Upload plant image"
       >
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+        <svg
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          strokeWidth="2"
+          strokeLinecap="round"
+          strokeLinejoin="round"
+        >
           <path d="M12 16V4M7 9l5-5 5 5M5 20h14" />
         </svg>
         <span className="mobile-fab-label">Photo</span>
@@ -895,14 +1054,17 @@ function App() {
       <nav>
         <div className="nav-inner wrap">
           <div className="brand">
-            <img src="https://images.unsplash.com/photo-1466692476868-aef1dfb1e735?auto=format&fit=crop&w=400&q=80" alt="Crop Doctor" />
+            <img
+              src="https://images.unsplash.com/photo-1466692476868-aef1dfb1e735?auto=format&fit=crop&w=400&q=80"
+              alt="Crop Doctor"
+            />
             <span>Crop Doctor</span>
           </div>
 
           <ul className="nav-links">
             {navItems.map((item) => (
               <li key={item}>
-                <a 
+                <a
                   href={`#${navTargets[item]}`}
                   className={activeNavSection === navTargets[item] ? 'active' : ''}
                   onClick={() => setActiveNavSection(navTargets[item])}
@@ -927,7 +1089,9 @@ function App() {
 
         <div className={`mobile-menu ${mobileOpen ? 'open' : ''}`}>
           {navItems.map((item) => (
-            <a key={item} href={`#${navTargets[item]}`} onClick={() => setMobileOpen(false)}>{item}</a>
+            <a key={item} href={`#${navTargets[item]}`} onClick={() => setMobileOpen(false)}>
+              {item}
+            </a>
           ))}
         </div>
       </nav>
@@ -940,13 +1104,21 @@ function App() {
               Detect plant health <em>before</em> it hurts yield.
             </h1>
             <p className="lede">
-              Crop Doctor helps farmers and growers monitor crop conditions using field images,
-              visual stress indicators, and quick plant health diagnostics.
+              Crop Doctor helps farmers and growers monitor crop conditions using field images, visual stress
+              indicators, and quick plant health diagnostics.
             </p>
             <div className="badge-row">
               {badgeItems.map((badge) => (
                 <div key={badge} className="badge">
-                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                  <svg
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    strokeWidth="1.8"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    aria-hidden="true"
+                  >
                     <path d="M5 12.5C5 8.3 8.3 5 12.5 5c3.2 0 5.5 2.5 5.5 5.5 0 4.3-3.5 7.5-7.5 7.5S5 16.8 5 12.5Z" />
                     <path d="M12.5 5v7.5" />
                     <path d="M12.5 12.5h5" />
@@ -973,7 +1145,14 @@ function App() {
                   <span className="bracket br" />
                   <div className="sweep" />
                   {deviceCameraActive ? (
-                    <video ref={videoRef} className="device-video" autoPlay playsInline muted aria-label="Device camera preview" />
+                    <video
+                      ref={videoRef}
+                      className="device-video"
+                      autoPlay
+                      playsInline
+                      muted
+                      aria-label="Device camera preview"
+                    />
                   ) : (
                     <img id="feedImg" src={feedImage} alt="Plant camera feed" />
                   )}
@@ -986,35 +1165,82 @@ function App() {
                   <span id="readoutRight">{readoutRight}</span>
                 </div>
                 <div className="connect-row">
-                  <input id="ipInput" className="ip-input" type="text" placeholder="Enter camera IP, e.g. 192.168.2.50" />
-                  <button type="button" className="btn btn-primary" id="connectBtn" onClick={handleConnect}>Connect</button>
+                  <input
+                    id="ipInput"
+                    className="ip-input"
+                    type="text"
+                    placeholder="Enter camera IP, e.g. 192.168.2.50"
+                  />
+                  <button type="button" className="btn btn-primary" id="connectBtn" onClick={handleConnect}>
+                    Connect
+                  </button>
                 </div>
                 <div className="device-camera-row">
                   {deviceCameraActive ? (
-                    <button type="button" className="btn btn-secondary" onClick={stopDeviceCamera}>Stop device camera</button>
+                    <button type="button" className="btn btn-secondary" onClick={stopDeviceCamera}>
+                      Stop device camera
+                    </button>
                   ) : (
-                    <button type="button" className="btn btn-secondary" onClick={startDeviceCamera}>Use this device camera</button>
+                    <button type="button" className="btn btn-secondary" onClick={startDeviceCamera}>
+                      Use this device camera
+                    </button>
                   )}
                 </div>
                 <div className="upload-row">
-                  <input ref={fileInputRef} className="file-input" type="file" accept="image/*" multiple onChange={handleImageSelect} />
+                  <input
+                    ref={fileInputRef}
+                    className="file-input"
+                    type="file"
+                    accept="image/*"
+                    multiple
+                    onChange={handleImageSelect}
+                  />
                   <button type="button" className="btn btn-upload" onClick={() => fileInputRef.current?.click()}>
-                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                    <svg
+                      viewBox="0 0 24 24"
+                      fill="none"
+                      stroke="currentColor"
+                      strokeWidth="1.8"
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      aria-hidden="true"
+                    >
                       <path d="M12 16V4M7 9l5-5 5 5M5 20h14" />
                     </svg>
                     Choose plant image
                   </button>
-                  {uploadError && <div className="upload-error" role="alert" aria-live="assertive">{uploadError}</div>}
+                  {uploadError && (
+                    <div className="upload-error" role="alert" aria-live="assertive">
+                      {uploadError}
+                    </div>
+                  )}
                 </div>
                 <div className="shutter-row">
-                  <button type="button" className="shutter-btn" id="shutterBtn" disabled={shutterDisabled} onClick={runDiagnosis} aria-label="Scan plant">
-                    <svg viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                  <button
+                    type="button"
+                    className="shutter-btn"
+                    id="shutterBtn"
+                    disabled={shutterDisabled}
+                    onClick={runDiagnosis}
+                    aria-label="Scan plant"
+                  >
+                    <svg
+                      viewBox="0 0 24 24"
+                      fill="none"
+                      stroke="white"
+                      strokeWidth="1.8"
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      aria-hidden="true"
+                    >
                       <path d="M3 9.5A2.5 2.5 0 0 1 5.5 7h1.1l1.1-2.2h8.6L17.4 7h1.1A2.5 2.5 0 0 1 21 9.5v7A2.5 2.5 0 0 1 18.5 19h-13A2.5 2.5 0 0 1 3 16.5v-7Z" />
                       <circle cx="12" cy="13" r="3.5" />
                     </svg>
                   </button>
                 </div>
-                <div className="hint" id="hintText">{hintText}</div>
+                <div className="hint" id="hintText">
+                  {hintText}
+                </div>
               </div>
             </div>
 
@@ -1030,11 +1256,17 @@ function App() {
                 </div>
                 <div className="status-row">
                   <span>Plant checker</span>
-                  <span className={`status-flag ${classifierStatus === 'ready' ? 'on' : 'off'}`}><span className="dot" />{classifierStatus === 'ready' ? 'Ready' : 'Loading'}</span>
+                  <span className={`status-flag ${classifierStatus === 'ready' ? 'on' : 'off'}`}>
+                    <span className="dot" />
+                    {classifierStatus === 'ready' ? 'Ready' : 'Loading'}
+                  </span>
                 </div>
                 <div className="status-row">
                   <span>Network</span>
-                  <span className="status-flag on"><span className="dot" />Local Wi-Fi</span>
+                  <span className="status-flag on">
+                    <span className="dot" />
+                    Local Wi-Fi
+                  </span>
                 </div>
                 <div className="status-row">
                   <span>Shared gallery</span>
@@ -1061,7 +1293,9 @@ function App() {
               </div>
 
               <div className={`recommendation-box ${recommendations.length === 0 ? 'empty' : ''}`}>
-                <div className="log-head">{selectedPlantName ? `Care plan · ${selectedPlantName}` : 'Plant care plan'}</div>
+                <div className="log-head">
+                  {selectedPlantName ? `Care plan · ${selectedPlantName}` : 'Plant care plan'}
+                </div>
                 {recommendations.length === 0 ? (
                   <p>Complete a plant scan to receive care recommendations based on its result.</p>
                 ) : (
@@ -1076,10 +1310,16 @@ function App() {
               <div className="progress-box">
                 <div className="log-head">
                   {selectedPlantName ? `Health timeline · ${selectedPlantName}` : 'Health progress tracker'}
-                  {selectedPlantName && <span style={{ opacity: 0.6, fontSize: '0.75rem' }}>Select another plant to view</span>}
+                  {selectedPlantName && (
+                    <span style={{ opacity: 0.6, fontSize: '0.75rem' }}>Select another plant to view</span>
+                  )}
                 </div>
                 {Object.keys(progressData).length === 0 ? (
-                  <p>{selectedPlantName ? `No history yet for ${selectedPlantName}. Scan this plant again to build a progress timeline.` : 'Scan the same plant multiple times to track its health progress over time.'}</p>
+                  <p>
+                    {selectedPlantName
+                      ? `No history yet for ${selectedPlantName}. Scan this plant again to build a progress timeline.`
+                      : 'Scan the same plant multiple times to track its health progress over time.'}
+                  </p>
                 ) : (
                   <div className="progress-tracker">
                     {Object.entries(progressData).map(([plant, scans]) => (
@@ -1110,7 +1350,9 @@ function App() {
                         </div>
                         <div className="progress-legend">
                           <span className="latest">Latest: {scans[0].date}</span>
-                          <span className={`trend ${scans[0].status}`}>{scans[0].status === 'healthy' ? '✓ Healthy' : '⚠ At Risk'}</span>
+                          <span className={`trend ${scans[0].status}`}>
+                            {scans[0].status === 'healthy' ? '✓ Healthy' : '⚠ At Risk'}
+                          </span>
                         </div>
                       </div>
                     ))}
@@ -1119,7 +1361,9 @@ function App() {
               </div>
 
               <div className="gallery-box" ref={galleryBoxRef}>
-                <div className="log-head">Plant gallery <span>{gallery.length} saved</span></div>
+                <div className="log-head">
+                  Plant gallery <span>{gallery.length} saved</span>
+                </div>
                 {showGalleryHint && (
                   <div className="gallery-hint" aria-live="polite" role="status">
                     ✓ Image selected — scroll above to view details in the timeline
@@ -1140,18 +1384,37 @@ function App() {
                           if (event.key === 'Enter' || event.key === ' ') viewGalleryImage(image)
                         }}
                       >
-                        <img src={image.url} alt={`Captured ${image.status === 'healthy' ? 'healthy' : 'at-risk'} plant`} />
+                        <img
+                          src={image.url}
+                          alt={`Captured ${image.status === 'healthy' ? 'healthy' : 'at-risk'} plant`}
+                        />
                         <div className="gallery-meta">
                           <div>
                             <div className="gallery-plant-name">{image.plantName || 'Plant / crop'}</div>
-                            <span className={`tag ${image.status}`}>{image.status === 'healthy' ? 'Healthy' : 'At Risk'}</span>
+                            <span className={`tag ${image.status}`}>
+                              {image.status === 'healthy' ? 'Healthy' : 'At Risk'}
+                            </span>
                             <div className="gallery-confidence">{image.confidence}% confidence</div>
                           </div>
-                          <button type="button" className="delete-image" title="Delete image" aria-label="Delete image" onClick={(event) => {
-                            event.stopPropagation()
-                            deleteGalleryImage(image)
-                          }}>
-                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                          <button
+                            type="button"
+                            className="delete-image"
+                            title="Delete image"
+                            aria-label="Delete image"
+                            onClick={(event) => {
+                              event.stopPropagation()
+                              deleteGalleryImage(image)
+                            }}
+                          >
+                            <svg
+                              viewBox="0 0 24 24"
+                              fill="none"
+                              stroke="currentColor"
+                              strokeWidth="1.8"
+                              strokeLinecap="round"
+                              strokeLinejoin="round"
+                              aria-hidden="true"
+                            >
                               <path d="M4 7h16M10 11v6M14 11v6M6 7l1 13h10l1-13M9 7l1-3h4l1 3" />
                             </svg>
                           </button>
@@ -1174,13 +1437,14 @@ function App() {
                           {log.isHealthy ? 'Healthy' : 'At Risk'}
                         </span>
                         <div>{log.confidence}% confidence</div>
-                        <div className="time">Scan #{index + 1} · {log.time}</div>
+                        <div className="time">
+                          Scan #{index + 1} · {log.time}
+                        </div>
                       </div>
                     ))
                   )}
                 </div>
               </div>
-
             </div>
           </div>
         </section>
@@ -1214,19 +1478,43 @@ function App() {
                 <div className="why-card" key={item.title}>
                   <div className="why-icon">
                     {item.icon === 'leaf' && (
-                      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                      <svg
+                        viewBox="0 0 24 24"
+                        fill="none"
+                        stroke="currentColor"
+                        strokeWidth="1.8"
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        aria-hidden="true"
+                      >
                         <path d="M19 3C13.1 3 9 7.2 9 13.3c0 4.9 3.6 7.7 10 7.7V3Z" />
                         <path d="M9 13.3C7 11.8 5 10 4 7.5c2.5 0 4.5 1 5 2.5" />
                       </svg>
                     )}
                     {item.icon === 'shield' && (
-                      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                      <svg
+                        viewBox="0 0 24 24"
+                        fill="none"
+                        stroke="currentColor"
+                        strokeWidth="1.8"
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        aria-hidden="true"
+                      >
                         <path d="M12 3 5 6v5c0 5 3.3 8.7 7 10 3.7-1.3 7-5 7-10V6l-7-3Z" />
                         <path d="m9.5 12 1.7 1.7 3.8-4.2" />
                       </svg>
                     )}
                     {item.icon === 'signal' && (
-                      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                      <svg
+                        viewBox="0 0 24 24"
+                        fill="none"
+                        stroke="currentColor"
+                        strokeWidth="1.8"
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        aria-hidden="true"
+                      >
                         <path d="M4 18V9" />
                         <path d="M10 18V5" />
                         <path d="M16 18v-8" />
@@ -1234,7 +1522,15 @@ function App() {
                       </svg>
                     )}
                     {item.icon === 'spark' && (
-                      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                      <svg
+                        viewBox="0 0 24 24"
+                        fill="none"
+                        stroke="currentColor"
+                        strokeWidth="1.8"
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        aria-hidden="true"
+                      >
                         <path d="m12 2 1.6 5.4L19 9l-5.4 1.6L12 16l-1.6-5.4L5 9l5.4-1.6L12 2Z" />
                       </svg>
                     )}
@@ -1257,7 +1553,15 @@ function App() {
               {teamMembers.map((member) => (
                 <div key={member.name} className="team-card">
                   <div className="avatar">
-                    {member.image ? <img className={`portrait-${member.name.toLowerCase()}`} src={member.image} alt={`${member.name} portrait`} /> : member.initials}
+                    {member.image ? (
+                      <img
+                        className={`portrait-${member.name.toLowerCase()}`}
+                        src={member.image}
+                        alt={`${member.name} portrait`}
+                      />
+                    ) : (
+                      member.initials
+                    )}
                   </div>
                   <h3>{member.name}</h3>
                   <div className="team-role">{member.role}</div>
