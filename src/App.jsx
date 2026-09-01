@@ -3,6 +3,8 @@ import { getGalleryImages, removeGalleryImage, saveGalleryImage } from './galler
 import { trackEvent } from './analytics.js'
 import danishPortrait from './assets/danish.jpeg'
 import ramizPortrait from './assets/ramiz.jpeg'
+import saquibPortrait from './assets/Saquib.jpeg'
+import aadilPortrait from './assets/Aadil.jpeg'
 import './App.css'
 
 const navItems = ['Overview', 'How it works', 'Benefits', 'Team', 'Contact']
@@ -65,10 +67,10 @@ const whyItems = [
 const teamMembers = [
   { initials: 'D', name: 'Danish', role: 'Team Leader', dept: 'AI / Backend', image: danishPortrait },
   { initials: 'R', name: 'Ramiz', role: 'Frontend', dept: 'ReactJS and AI/AML', image: ramizPortrait },
-  { initials: 'M2', name: 'Saquib', role: 'Hardware', dept: 'ESP32-CAM Setup' },
-  { initials: 'M3', name: 'Aadil', role: 'AI / ML', dept: 'Model Training' },
-  { initials: 'M4', name: 'Zohra', role: 'Backend', dept: 'Server & API' },
-  { initials: 'M5', name: 'Faiza', role: 'Research', dept: 'Dataset & Domain' },
+  { initials: 'S', name: 'Saquib', role: 'Hardware', dept: 'ESP32-CAM Setup', image: saquibPortrait },
+  { initials: 'A', name: 'Aadil', role: 'AI / ML', dept: 'Model Training', image: aadilPortrait },
+  { initials: 'Z', name: 'Zohra', role: 'Backend', dept: 'Server & API' },
+  { initials: 'F', name: 'Faiza', role: 'Research', dept: 'Dataset & Domain' },
 ]
 
 const builtWith = ['ESP32-CAM', 'ReactJS', 'Generative AI', 'AI / ML', 'HTML/CSS/JS']
