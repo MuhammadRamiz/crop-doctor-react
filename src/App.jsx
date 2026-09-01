@@ -147,7 +147,7 @@ const genericPlantLabels = [
 const recognizedPlantNames = [
   { keywords: ['cactus', 'succulent', 'echeveria', 'prickly pear', 'aloe', 'agave', 'jade'], label: 'Cactus' },
   { keywords: ['palm', 'palm tree', 'date palm', 'coconut palm'], label: 'Palm tree' },
-  { keywords: ['rose', 'rose bush', 'flower', 'daisy'], label: 'Flower' },
+  { keywords: ['rose', 'rose bush', 'flower', 'daisy', 'sunflower'], label: 'Flower' },
   { keywords: ['corn', 'maize', 'sweet corn'], label: 'Corn' },
   { keywords: ['banana', 'banana plant', 'banana tree'], label: 'Banana' },
   { keywords: ['tomato', 'tomato plant'], label: 'Tomato' },
@@ -158,7 +158,54 @@ const recognizedPlantNames = [
   { keywords: ['orange', 'orange tree'], label: 'Orange' },
   { keywords: ['grape', 'grapevine', 'grape vine'], label: 'Grapevine' },
   { keywords: ['tree', 'pine', 'oak', 'birch', 'maple', 'spruce'], label: 'Tree' },
+  {
+    keywords: [
+      'broccoli',
+      'cauliflower',
+      'cucumber',
+      'zucchini',
+      'squash',
+      'potato',
+      'pineapple',
+      'strawberry',
+      'lemon',
+      'berry',
+    ],
+    label: 'Crop',
+  },
 ]
+
+const nonPlantLabels = [
+  'basket',
+  'wicker',
+  'vase',
+  'jar',
+  'bottle',
+  'container',
+  'chair',
+  'table',
+  'rug',
+  'wall',
+  'screen',
+  'pillow',
+  'shoe',
+  'sock',
+  'person',
+  'face',
+  'portrait',
+  'background',
+]
+
+const isLikelyPlantPrediction = (className) => {
+  const label = (className || '').toLowerCase().split(',')[0].trim()
+  if (!label) return false
+
+  const normalized = label.replace(/[_-]+/g, ' ')
+  if (nonPlantLabels.some((token) => normalized.includes(token))) return false
+  if (genericPlantLabels.includes(normalized)) return true
+  if (plantLabels.some((term) => normalized.includes(term))) return true
+  return recognizedPlantNames.some(({ keywords }) => keywords.some((keyword) => normalized.includes(keyword)))
+}
 
 const formatPlantName = (className) => {
   const rawName = (className || '').split(',')[0].trim()
@@ -169,6 +216,8 @@ const formatPlantName = (className) => {
 
   const mapped = recognizedPlantNames.find(({ keywords }) => keywords.some((keyword) => normalized.includes(keyword)))
   if (mapped) return mapped.label
+
+  if (!isLikelyPlantPrediction(name)) return 'Plant / crop'
 
   return name
     .split(' ')
@@ -687,7 +736,7 @@ function App() {
     const predictions = await plantModel.current.classify(canvas, 10)
     const hasPlantLabel = predictions.some(({ className, probability }) => {
       const label = className.toLowerCase()
-      return probability >= 0.12 && plantLabels.some((term) => label.includes(term))
+      return probability >= 0.12 && isLikelyPlantPrediction(label)
     })
     const hasPlant = hasPlantLabel || hasVegetationColor(canvas)
     const plantPrediction = predictions
@@ -695,7 +744,7 @@ function App() {
         const label = className.toLowerCase()
         return (
           probability >= 0.12 &&
-          plantLabels.some((term) => label.includes(term)) &&
+          isLikelyPlantPrediction(label) &&
           !genericPlantLabels.includes(label.split(',')[0].trim())
         )
       })
@@ -704,14 +753,15 @@ function App() {
     const fallbackPrediction = predictions
       .filter(({ className, probability }) => {
         const label = className.toLowerCase()
-        return probability >= 0.2 && !genericPlantLabels.includes(label.split(',')[0].trim())
+        return probability >= 0.24 && isLikelyPlantPrediction(label)
       })
       .sort((first, second) => second.probability - first.probability)[0]
 
     if (!hasPlant) return { accepted: false, reason: 'plant or crop not detected' }
 
     const resolvedPrediction = plantPrediction || fallbackPrediction || predictions[0]
-    return { accepted: true, plantName: formatPlantName(resolvedPrediction?.className || 'Plant / crop') }
+    const finalPlantName = formatPlantName(resolvedPrediction?.className || 'Plant / crop')
+    return { accepted: true, plantName: finalPlantName }
   }
 
   const estimatePlantHealth = (canvas) => {
