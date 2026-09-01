@@ -1074,10 +1074,11 @@ nav {
   border-radius: 16px;
   padding: 16px 18px;
   scroll-margin-top: 24px;
+  overflow: hidden;
+  contain: layout paint;
 }
 
 .gallery-hint {
-  animation: slideInDown 0.3s ease;
   margin-bottom: 12px;
   padding: 10px 14px;
   background: rgba(168, 224, 138, 0.12);
@@ -1087,6 +1088,7 @@ nav {
   font-size: 0.8rem;
   font-weight: 500;
   text-align: center;
+  opacity: 0.98;
 }
 
 @keyframes slideInDown {
@@ -1109,6 +1111,7 @@ nav {
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
   gap: 10px;
+  align-items: start;
 }
 .gallery-item {
   overflow: hidden;
@@ -1119,30 +1122,33 @@ nav {
   transition:
     border-color 0.2s ease,
     box-shadow 0.2s ease,
-    transform 0.2s ease;
-  will-change: transform;
+    opacity 0.2s ease;
+  transform: translate3d(0, 0, 0);
+  backface-visibility: hidden;
+  contain: layout paint;
 }
 .gallery-item:hover,
 .gallery-item:focus-visible {
   border-color: rgba(168, 224, 138, 0.55);
   outline: none;
-  transform: translateY(-1px);
+  transform: translate3d(0, 0, 0);
 }
 .gallery-item.selected {
   border-color: var(--chlorophyll);
   box-shadow: 0 0 0 2px rgba(168, 224, 138, 0.2);
-  transform: none;
+  transform: translate3d(0, 0, 0);
 }
 .gallery-item img {
   width: 100%;
   aspect-ratio: 1;
   object-fit: cover;
   display: block;
-  transition: transform 0.2s ease;
+  transform: translate3d(0, 0, 0);
+  transition: none;
 }
 .gallery-item:hover img,
 .gallery-item:focus-visible img {
-  transform: scale(1.02);
+  transform: translate3d(0, 0, 0);
 }
 .gallery-meta {
   display: flex;

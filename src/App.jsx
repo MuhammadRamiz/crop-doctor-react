@@ -300,14 +300,24 @@ const isRottenTomatoImage = (canvas) => {
 const isPotatoLikeImage = (canvas) => {
   const { redMean, greenMean, blueMean, warmRatio, darkSpotRatio, yellowRatio, greenRatio } = getImageColorStats(canvas)
 
-  return (
-    redMean > greenMean * 0.9 &&
-    redMean > blueMean * 0.9 &&
-    warmRatio > 0.12 &&
-    darkSpotRatio > 0.025 &&
-    greenRatio < 0.24 &&
-    yellowRatio < 0.18
-  )
+  const tuberFrame =
+    redMean > greenMean * 0.8 &&
+    redMean > blueMean * 0.8 &&
+    warmRatio > 0.08 &&
+    darkSpotRatio > 0.018 &&
+    greenRatio < 0.35 &&
+    yellowRatio < 0.25 &&
+    (redMean > 140 || warmRatio > 0.12 || darkSpotRatio > 0.03)
+
+  const plantFrame =
+    greenMean > redMean * 0.8 &&
+    greenMean > blueMean * 0.8 &&
+    greenRatio > 0.2 &&
+    darkSpotRatio > 0.05 &&
+    yellowRatio < 0.18 &&
+    !(greenRatio > 0.42 && yellowRatio > 0.13)
+
+  return tuberFrame || plantFrame
 }
 
 const resolveKnownCropName = (value) => {
@@ -327,14 +337,30 @@ const detectCropIdentity = (canvas, fallbackName = 'Plant / crop') => {
   const formattedFallback = formatPlantName(fallbackName)
   const fallbackLower = (formattedFallback || '').toLowerCase()
 
+  const potatoVisualRule =
+    isPotatoLikeImage(canvas) ||
+    (stats.warmRatio > 0.08 &&
+      stats.darkSpotRatio > 0.02 &&
+      stats.greenRatio < 0.3 &&
+      stats.redMean > stats.greenMean * 0.85) ||
+    (stats.darkSpotRatio > 0.05 &&
+      stats.greenRatio > 0.2 &&
+      stats.greenMean > stats.redMean * 0.85 &&
+      stats.yellowRatio < 0.18)
+
+  const cornLikeFrame =
+    stats.greenMean > stats.redMean && stats.greenRatio > 0.28 && stats.yellowRatio < 0.12 && stats.darkSpotRatio < 0.06
+
   const potatoRule =
     fallbackLower.includes('potato') ||
     fallbackLabel === 'Potato' ||
-    isPotatoLikeImage(canvas) ||
+    (fallbackLower.includes('root') && stats.darkSpotRatio > 0.02) ||
+    potatoVisualRule ||
     (stats.darkSpotRatio > 0.04 &&
-      stats.warmRatio > 0.14 &&
+      stats.warmRatio > 0.12 &&
       stats.greenRatio < 0.22 &&
-      stats.redMean > stats.greenMean * 0.9)
+      stats.redMean > stats.greenMean * 0.9) ||
+    (stats.darkSpotRatio > 0.05 && stats.greenRatio > 0.2 && !cornLikeFrame)
 
   if (potatoRule) return 'Potato'
 
@@ -771,6 +797,14 @@ function App() {
                   ? 'leafy plant'
                   : 'general crop'
 
+    if (isRootCrop) {
+      recommendations.length = 0
+      recommendations.push(
+        'Inspect the potato surface and surrounding soil for soft spots, bruising, dark lesions, or fungal pockets.'
+      )
+      recommendations.push('Check drainage and soil moisture before watering again, and remove any damaged tubers.')
+    }
+
     if (cropFamily === 'root crop') {
       recommendations.push('For potato: inspect tubers, soil drainage, and soft/dark lesions before watering again.')
       recommendations.push(
@@ -827,9 +861,6 @@ function App() {
     setReadoutRight(`${image.confidence}% confidence`)
     setLastScan(`${image.confidence}%`)
     setRecommendations(getCropRecommendations(isHealthy, image.plantName || 'Plant / crop', diseases))
-
-    setShowGalleryHint(true)
-    setTimeout(() => setShowGalleryHint(false), 2600)
   }
 
   const handleConnect = async () => {
