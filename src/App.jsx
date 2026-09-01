@@ -145,34 +145,34 @@ const genericPlantLabels = [
   'grass family',
 ]
 const recognizedPlantNames = [
+  { keywords: ['tomato', 'tomato plant', 'garden tomato'], label: 'Tomato' },
+  { keywords: ['pepper', 'bell pepper', 'sweet pepper', 'capsicum', 'pepper plant'], label: 'Pepper' },
+  { keywords: ['sunflower'], label: 'Sunflower' },
+  { keywords: ['celery'], label: 'Celery' },
+  { keywords: ['broccoli'], label: 'Broccoli' },
+  { keywords: ['cauliflower'], label: 'Cauliflower' },
+  { keywords: ['cucumber'], label: 'Cucumber' },
+  { keywords: ['zucchini', 'courgette'], label: 'Zucchini' },
+  { keywords: ['squash', 'pumpkin'], label: 'Squash' },
+  { keywords: ['potato'], label: 'Potato' },
+  { keywords: ['pineapple'], label: 'Pineapple' },
+  { keywords: ['strawberry'], label: 'Strawberry' },
+  { keywords: ['lemon'], label: 'Lemon' },
+  { keywords: ['banana', 'banana plant', 'banana tree'], label: 'Banana' },
   { keywords: ['cactus', 'succulent', 'echeveria', 'prickly pear', 'aloe', 'agave', 'jade'], label: 'Cactus' },
   { keywords: ['palm', 'palm tree', 'date palm', 'coconut palm'], label: 'Palm tree' },
-  { keywords: ['rose', 'rose bush', 'flower', 'daisy', 'sunflower'], label: 'Flower' },
+  { keywords: ['rose', 'rose bush'], label: 'Rose' },
+  { keywords: ['daisy'], label: 'Daisy' },
   { keywords: ['corn', 'maize', 'sweet corn'], label: 'Corn' },
-  { keywords: ['banana', 'banana plant', 'banana tree'], label: 'Banana' },
-  { keywords: ['tomato', 'tomato plant'], label: 'Tomato' },
-  { keywords: ['pepper', 'pepper plant'], label: 'Pepper' },
   { keywords: ['fern', 'fern plant'], label: 'Fern' },
   { keywords: ['fig', 'fig tree', 'ficus'], label: 'Fig' },
   { keywords: ['olive', 'olive tree'], label: 'Olive' },
   { keywords: ['orange', 'orange tree'], label: 'Orange' },
   { keywords: ['grape', 'grapevine', 'grape vine'], label: 'Grapevine' },
   { keywords: ['tree', 'pine', 'oak', 'birch', 'maple', 'spruce'], label: 'Tree' },
-  {
-    keywords: [
-      'broccoli',
-      'cauliflower',
-      'cucumber',
-      'zucchini',
-      'squash',
-      'potato',
-      'pineapple',
-      'strawberry',
-      'lemon',
-      'berry',
-    ],
-    label: 'Crop',
-  },
+  { keywords: ['flower', 'flowering plant'], label: 'Flower' },
+  { keywords: ['berry'], label: 'Berry' },
+  { keywords: ['plant', 'leaf', 'vegetable', 'fruit'], label: 'Plant / crop' },
 ]
 
 const nonPlantLabels = [
@@ -211,10 +211,13 @@ const formatPlantName = (className) => {
   const rawName = (className || '').split(',')[0].trim()
   const name = rawName.replace(/[_-]+/g, ' ')
   if (!name) return 'Plant / crop'
+
   const normalized = name.toLowerCase()
   if (genericPlantLabels.includes(normalized)) return 'Plant / crop'
 
-  const mapped = recognizedPlantNames.find(({ keywords }) => keywords.some((keyword) => normalized.includes(keyword)))
+  const mapped = recognizedPlantNames.find(({ keywords }) =>
+    keywords.some((keyword) => normalized.includes(keyword) || keyword.includes(normalized))
+  )
   if (mapped) return mapped.label
 
   if (!isLikelyPlantPrediction(name)) return 'Plant / crop'
