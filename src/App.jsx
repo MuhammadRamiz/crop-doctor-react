@@ -469,6 +469,44 @@ const isTomatoLikeImage = (canvas) => {
   return redMean > greenMean && redMean > blueMean && warmRatio > 0.12 && darkSpotRatio > 0.02
 }
 
+const isFlowerLikeScene = (canvas, fallbackName = '') => {
+  const stats = getImageColorStats(canvas)
+  const fallbackLower = (fallbackName || '').toLowerCase()
+  const flowerColorRule =
+    stats.redMean > stats.greenMean * 0.9 &&
+    stats.yellowRatio > 0.08 &&
+    stats.greenRatio < 0.55 &&
+    stats.darkSpotRatio < 0.16
+
+  return (
+    fallbackLower.includes('flower') ||
+    fallbackLower.includes('rose') ||
+    fallbackLower.includes('sunflower') ||
+    fallbackLower.includes('daisy') ||
+    flowerColorRule
+  )
+}
+
+const isCactusLikeScene = (canvas, fallbackName = '') => {
+  const stats = getImageColorStats(canvas)
+  const fallbackLower = (fallbackName || '').toLowerCase()
+  const cactusColorRule =
+    stats.greenMean > stats.redMean &&
+    stats.greenRatio > 0.25 &&
+    stats.greenRatio < 0.7 &&
+    stats.warmRatio < 0.18 &&
+    stats.darkSpotRatio < 0.14
+
+  return (
+    fallbackLower.includes('cactus') ||
+    fallbackLower.includes('succulent') ||
+    fallbackLower.includes('aloe') ||
+    fallbackLower.includes('agave') ||
+    fallbackLower.includes('jade') ||
+    cactusColorRule
+  )
+}
+
 const isRottenTomatoImage = (canvas) => {
   const { redMean, greenMean, blueMean, warmRatio, darkSpotRatio } = getImageColorStats(canvas)
   return redMean > greenMean && redMean > blueMean && warmRatio > 0.15 && darkSpotRatio > 0.04
@@ -478,22 +516,22 @@ const isPotatoLikeImage = (canvas) => {
   const { redMean, greenMean, blueMean, warmRatio, darkSpotRatio, yellowRatio, greenRatio } = getImageColorStats(canvas)
 
   const tuberFrame =
-    redMean > greenMean * 0.8 &&
-    redMean > blueMean * 0.8 &&
-    warmRatio > 0.12 &&
-    darkSpotRatio > 0.03 &&
-    greenRatio < 0.28 &&
-    yellowRatio < 0.2 &&
-    (redMean > 140 || warmRatio > 0.16)
+    redMean > greenMean * 0.85 &&
+    redMean > blueMean * 0.85 &&
+    warmRatio > 0.15 &&
+    darkSpotRatio > 0.06 &&
+    greenRatio < 0.2 &&
+    yellowRatio < 0.12 &&
+    (redMean > 145 || warmRatio > 0.18)
 
   const plantFrame =
     greenMean > redMean * 0.8 &&
     greenMean > blueMean * 0.8 &&
-    greenRatio > 0.22 &&
-    greenRatio < 0.5 &&
-    darkSpotRatio > 0.06 &&
-    yellowRatio < 0.12 &&
-    !(greenRatio > 0.42 && yellowRatio > 0.08)
+    greenRatio > 0.26 &&
+    greenRatio < 0.45 &&
+    darkSpotRatio > 0.08 &&
+    yellowRatio < 0.08 &&
+    !(greenRatio > 0.4 && yellowRatio > 0.05)
 
   return tuberFrame || plantFrame
 }
@@ -516,6 +554,7 @@ const detectCropIdentity = (canvas, fallbackName = 'Plant / crop') => {
   const fallbackLower = (formattedFallback || '').toLowerCase()
 
   const flowerLikeFrame =
+    isFlowerLikeScene(canvas, fallbackName) ||
     (stats.redMean > stats.greenMean && stats.warmRatio > 0.14 && stats.greenRatio < 0.6 && stats.yellowRatio < 0.22) ||
     (stats.redMean > stats.greenMean * 1.08 &&
       stats.warmRatio > 0.12 &&
@@ -524,11 +563,13 @@ const detectCropIdentity = (canvas, fallbackName = 'Plant / crop') => {
     fallbackLower.includes('flower') ||
     fallbackLower.includes('rose') ||
     fallbackLower.includes('sunflower') ||
+    fallbackLower.includes('daisy') ||
     fallbackLabel === 'Flower' ||
     fallbackLabel === 'Rose' ||
     fallbackLabel === 'Sunflower'
 
   const cactusLikeFrame =
+    isCactusLikeScene(canvas, fallbackName) ||
     (stats.greenMean > stats.redMean &&
       stats.greenRatio > 0.3 &&
       stats.warmRatio < 0.18 &&
@@ -618,6 +659,35 @@ const defaultDemoLeaf = (() => {
   )
 })()
 
+async function getDynamicImageStatus(image) {
+  if (!image?.blob) return image?.status === 'healthy' ? 'healthy' : 'risk'
+
+  try {
+    const blob = image.blob instanceof Blob ? image.blob : new Blob([image.blob])
+    const imageElement = await new Promise((resolve, reject) => {
+      const createdImage = new Image()
+      createdImage.onload = () => resolve(createdImage)
+      createdImage.onerror = () => reject(new Error('image read error'))
+      createdImage.src = URL.createObjectURL(blob)
+    })
+
+    const canvas = document.createElement('canvas')
+    const scale = Math.min(1, 1280 / Math.max(imageElement.naturalWidth, imageElement.naturalHeight))
+    canvas.width = Math.round(imageElement.naturalWidth * scale)
+    canvas.height = Math.round(imageElement.naturalHeight * scale)
+    const context = canvas.getContext('2d')
+    context.drawImage(imageElement, 0, 0, canvas.width, canvas.height)
+
+    const diseases = analyzeDiseaseIndicators(canvas)
+    const plantName = image.plantName || 'Plant / crop'
+    const result = estimatePlantHealth(canvas, diseases, plantName)
+
+    return result.confidence < 50 || !result.isHealthy ? 'risk' : 'healthy'
+  } catch {
+    return image?.status === 'healthy' ? 'healthy' : 'risk'
+  }
+}
+
 function App() {
   const [deviceIP, setDeviceIP] = useState('')
   const [connected, setConnected] = useState(false)
@@ -642,7 +712,6 @@ function App() {
   const [uploadError, setUploadError] = useState('')
   const [shutterDisabled, setShutterDisabled] = useState(true)
   const [activeNavSection, setActiveNavSection] = useState('overview')
-  const [showGalleryHint, setShowGalleryHint] = useState(false)
   const [showDeleteAllConfirm, setShowDeleteAllConfirm] = useState(false)
   const videoRef = useRef(null)
   const fileInputRef = useRef(null)
@@ -813,35 +882,6 @@ function App() {
     setReadoutRight(nextConnected ? ip : 'ready')
   }
 
-  const getDynamicImageStatus = async (image) => {
-    if (!image?.blob) return image?.status === 'healthy' ? 'healthy' : 'risk'
-
-    try {
-      const blob = image.blob instanceof Blob ? image.blob : new Blob([image.blob])
-      const imageElement = await new Promise((resolve, reject) => {
-        const createdImage = new Image()
-        createdImage.onload = () => resolve(createdImage)
-        createdImage.onerror = () => reject(new Error('image read error'))
-        createdImage.src = URL.createObjectURL(blob)
-      })
-
-      const canvas = document.createElement('canvas')
-      const scale = Math.min(1, 1280 / Math.max(imageElement.naturalWidth, imageElement.naturalHeight))
-      canvas.width = Math.round(imageElement.naturalWidth * scale)
-      canvas.height = Math.round(imageElement.naturalHeight * scale)
-      const context = canvas.getContext('2d')
-      context.drawImage(imageElement, 0, 0, canvas.width, canvas.height)
-
-      const diseases = analyzeDiseaseIndicators(canvas)
-      const plantName = image.plantName || 'Plant / crop'
-      const result = estimatePlantHealth(canvas, diseases, plantName)
-
-      return result.confidence < 50 || !result.isHealthy ? 'risk' : 'healthy'
-    } catch {
-      return image?.status === 'healthy' ? 'healthy' : 'risk'
-    }
-  }
-
   const addGalleryImage = async (blob, metadata) => {
     try {
       const bytes = await blob.arrayBuffer()
@@ -983,43 +1023,6 @@ function App() {
     return diseases.sort((a, b) => b.severity - a.severity)
   }
 
-  const getCropHealthProfile = (plantName = 'Plant / crop') => {
-    const crop = (plantName || '').toLowerCase()
-
-    if (crop.includes('potato') || crop.includes('root') || crop.includes('tuber')) {
-      return { threshold: 54, severityLimit: 26, stressPenalty: 0.28 }
-    }
-    if (crop.includes('tomato') || crop.includes('pepper') || crop.includes('berry') || crop.includes('fruit')) {
-      return { threshold: 56, severityLimit: 30, stressPenalty: 0.22 }
-    }
-    if (crop.includes('corn') || crop.includes('maize') || crop.includes('grain')) {
-      return { threshold: 55, severityLimit: 28, stressPenalty: 0.23 }
-    }
-    if (
-      crop.includes('flower') ||
-      crop.includes('rose') ||
-      crop.includes('sunflower') ||
-      crop.includes('cactus') ||
-      crop.includes('succulent')
-    ) {
-      return { threshold: 52, severityLimit: 32, stressPenalty: 0.2 }
-    }
-    if (
-      crop.includes('leaf') ||
-      crop.includes('broccoli') ||
-      crop.includes('cauliflower') ||
-      crop.includes('cucumber') ||
-      crop.includes('zucchini') ||
-      crop.includes('squash') ||
-      crop.includes('crop') ||
-      crop.includes('plant')
-    ) {
-      return { threshold: 58, severityLimit: 24, stressPenalty: 0.24 }
-    }
-
-    return { threshold: 58, severityLimit: 24, stressPenalty: 0.24 }
-  }
-
   const getRecommendations = (isHealthy, diseases = [], plantName = '') => {
     const recommendations = []
     const rootCrop = /(potato|tuber|root)/i.test(plantName || '')
@@ -1039,7 +1042,7 @@ function App() {
     }
 
     // Disease-specific recommendations
-    diseases.forEach(({ type, name, severity }) => {
+    diseases.forEach(({ type, name }) => {
       if (type === 'fungal') {
         recommendations.push(`${name}: Reduce humidity and improve air circulation. Apply fungicide if >30% coverage.`)
       } else if (type === 'bacterial') {
@@ -1245,6 +1248,8 @@ function App() {
     const potatoHeuristic = isPotatoLikeImage(canvas)
     const tomatoHeuristic = isTomatoLikeImage(canvas)
     const rottenTomatoHeuristic = isRottenTomatoImage(canvas)
+    const flowerHeuristic = isFlowerLikeScene(canvas)
+    const cactusHeuristic = isCactusLikeScene(canvas)
     const tomatoPrediction = predictions.some(({ className, probability }) => {
       const label = className.toLowerCase()
       return probability >= 0.12 && (label.includes('tomato') || label.includes('pepper')) && tomatoHeuristic
@@ -1307,6 +1312,14 @@ function App() {
       }
     }
 
+    if (flowerHeuristic) {
+      return { accepted: true, plantName: 'Flower' }
+    }
+
+    if (cactusHeuristic) {
+      return { accepted: true, plantName: 'Cactus' }
+    }
+
     if (potatoHeuristic) {
       return { accepted: true, plantName: 'Potato' }
     }
@@ -1327,7 +1340,7 @@ function App() {
     return { accepted: true, plantName: finalPlantName }
   }
 
-  const estimatePlantHealth = (canvas, diseases = [], plantName = 'Plant / crop') => {
+  const estimatePlantHealth = (canvas, diseases = [], _plantName = 'Plant / crop') => {
     const context = canvas.getContext('2d')
     const { data } = context.getImageData(0, 0, canvas.width, canvas.height)
     let greenPixels = 0
@@ -2073,11 +2086,6 @@ function App() {
                     </button>
                   </div>
                 </div>
-                {showGalleryHint && (
-                  <div className="gallery-hint" aria-live="polite" role="status">
-                    ✓ Image selected — scroll above to view details in the timeline
-                  </div>
-                )}
                 {gallery.length === 0 ? (
                   <p className="gallery-empty">Accepted captures will appear here.</p>
                 ) : (
