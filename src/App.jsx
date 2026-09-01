@@ -291,6 +291,55 @@ const isRottenTomatoImage = (canvas) => {
   return redMean > greenMean && redMean > blueMean && warmRatio > 0.15 && darkSpotRatio > 0.04
 }
 
+const isPotatoLikeImage = (canvas) => {
+  const context = canvas.getContext('2d', { willReadFrequently: true })
+  const { data } = context.getImageData(0, 0, canvas.width, canvas.height)
+
+  let redTotal = 0
+  let greenTotal = 0
+  let blueTotal = 0
+  let warmPixels = 0
+  let yellowPixels = 0
+  let greenPixels = 0
+  let darkPixels = 0
+  let visiblePixels = 0
+
+  for (let index = 0; index < data.length; index += 16) {
+    const red = data[index]
+    const green = data[index + 1]
+    const blue = data[index + 2]
+    const brightness = red + green + blue
+
+    if (brightness < 45) continue
+    visiblePixels += 1
+    redTotal += red
+    greenTotal += green
+    blueTotal += blue
+
+    if (red > 120 && green < 170 && blue < 150) warmPixels += 1
+    if (red > 170 && green > 120 && blue < 120) yellowPixels += 1
+    if (green > red * 1.05 && green > blue * 1.05 && green > 45) greenPixels += 1
+    if (red < 120 && green < 120 && blue < 115 && brightness > 40) darkPixels += 1
+  }
+
+  const redMean = redTotal / Math.max(visiblePixels, 1)
+  const greenMean = greenTotal / Math.max(visiblePixels, 1)
+  const blueMean = blueTotal / Math.max(visiblePixels, 1)
+  const warmRatio = warmPixels / Math.max(visiblePixels, 1)
+  const yellowRatio = yellowPixels / Math.max(visiblePixels, 1)
+  const greenRatio = greenPixels / Math.max(visiblePixels, 1)
+  const darkSpotRatio = darkPixels / Math.max(visiblePixels, 1)
+
+  return (
+    redMean > greenMean * 0.8 &&
+    redMean > blueMean * 0.9 &&
+    warmRatio > 0.14 &&
+    darkSpotRatio > 0.03 &&
+    greenRatio < 0.24 &&
+    yellowRatio < 0.14
+  )
+}
+
 const detectCropIdentity = (canvas, fallbackName = 'Plant / crop') => {
   const context = canvas.getContext('2d', { willReadFrequently: true })
   const { data } = context.getImageData(0, 0, canvas.width, canvas.height)
@@ -332,9 +381,12 @@ const detectCropIdentity = (canvas, fallbackName = 'Plant / crop') => {
 
   const formattedFallback = formatPlantName(fallbackName)
 
+  if (isPotatoLikeImage(canvas)) return 'Potato'
+
   if (redMean > greenMean && redMean > blueMean && warmRatio > 0.12) {
-    if (darkSpotRatio > 0.04 || yellowRatio < 0.1) return 'Tomato'
+    if (darkSpotRatio > 0.04 && yellowRatio < 0.12) return 'Potato'
     if (yellowRatio > 0.12) return 'Sunflower'
+    if (darkSpotRatio > 0.02 && greenRatio < 0.18) return 'Tomato'
     return 'Pepper'
   }
 
@@ -700,9 +752,14 @@ function App() {
   }
 
   const getCropRecommendations = (isHealthy, plantName, diseases = []) => {
-    const crop = plantName.toLowerCase()
+    const crop = (plantName || 'plant').toLowerCase()
     const recommendations = getRecommendations(isHealthy, diseases)
 
+    if (crop.includes('potato')) {
+      recommendations.push(
+        'For potato: Check tubers and soil moisture closely. Look for soft patches, dark lesions, and drainage issues before watering.'
+      )
+    }
     if (crop.includes('tomato'))
       recommendations.push(
         'For tomato: Check leaf undersides for whitefly and spider mites. Keep foliage dry overnight to prevent fungal issues.'
@@ -717,10 +774,6 @@ function App() {
       )
     if (crop.includes('pepper'))
       recommendations.push('For pepper: Scout for phytophthora and anthracnose. Avoid overcrowding to improve airflow.')
-    if (crop.includes('potato'))
-      recommendations.push(
-        'For potato: Monitor for late blight, early blight, and Colorado potato beetle. Improve drainage immediately.'
-      )
     if (crop.includes('cactus') || crop.includes('succulent'))
       recommendations.push(
         'For succulents: Ensure well-draining soil. Root rot is common in humid conditions; reduce watering.'
@@ -731,6 +784,22 @@ function App() {
       )
     if (crop.includes('fig'))
       recommendations.push('For fig: Watch for fig rust and root-knot nematodes. Ensure proper drainage and spacing.')
+
+    if (
+      !crop.includes('potato') &&
+      !crop.includes('tomato') &&
+      !crop.includes('corn') &&
+      !crop.includes('banana') &&
+      !crop.includes('pepper') &&
+      !crop.includes('cactus') &&
+      !crop.includes('succulent') &&
+      !crop.includes('grape') &&
+      !crop.includes('fig')
+    ) {
+      recommendations.push(
+        'For this crop: inspect the full plant, check both leaf surfaces, and monitor for localized spots, water stress, or nutrient imbalance.'
+      )
+    }
 
     return recommendations
   }
@@ -840,6 +909,7 @@ function App() {
     if (confidentFace) return { accepted: false, reason: 'person detected · frame rejected' }
 
     const predictions = await plantModel.current.classify(canvas, 10)
+    const potatoHeuristic = isPotatoLikeImage(canvas)
     const tomatoHeuristic = isTomatoLikeImage(canvas)
     const rottenTomatoHeuristic = isRottenTomatoImage(canvas)
     const tomatoPrediction = predictions.some(({ className, probability }) => {
@@ -870,6 +940,10 @@ function App() {
       .sort((first, second) => second.probability - first.probability)[0]
 
     if (!hasPlant) return { accepted: false, reason: 'plant or crop not detected' }
+
+    if (potatoHeuristic) {
+      return { accepted: true, plantName: 'Potato' }
+    }
 
     if (tomatoHeuristic || tomatoPrediction || rottenTomatoHeuristic) {
       return { accepted: true, plantName: 'Tomato' }

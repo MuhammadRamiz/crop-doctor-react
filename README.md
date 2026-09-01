@@ -1,94 +1,102 @@
 # Crop Doctor
 
-Crop Doctor is a college project for checking visible crop and plant health from an ESP32-CAM image. The React dashboard captures a frame, asks the connected service to validate it, and displays a health diagnosis only for accepted plant images.
+Crop Doctor is a React + Vite web app for checking plant and crop health from a camera or uploaded image. The app validates that the image is a real plant, rejects non-plant frames, estimates health from visible color and stress patterns, and gives a practical action plan for the crop or plant.
 
-*Note: This project uses automated GitHub Actions deployment.*
+This project is designed for a demo, classroom presentation, and field-friendly prototype workflow. It is not a scientific diagnosis engine, but it demonstrates a real-time crop-health analysis flow in a browser.
 
-## Run locally
+## Highlights
+
+- Camera or image upload flow for plant inspection
+- Plant-only validation using MobileNet + BlazeFace
+- Dynamic crop-aware naming for common plants, vegetables, fruits, and crops
+- Disease and stress heuristics for rust, spots, yellowing, fungal patterns, and nutrient stress
+- Crop-specific care recommendations
+- Local gallery storage with duplicate detection and saved scan history
+- GitHub Pages deployment setup for demo hosting
+
+## Live demo
+
+https://muhammadramiz.github.io/crop-doctor-react/
+
+## Tech stack
+
+- React 19
+- Vite
+- TensorFlow.js MobileNet
+- TensorFlow.js BlazeFace
+- IndexedDB for browser gallery storage
+- GitHub Pages deployment
+
+## How it works
+
+1. A user captures or uploads a plant image.
+2. The app checks whether the frame contains a face and whether the image looks like a plant or crop.
+3. It uses a general image classifier to estimate the crop/plant type.
+4. It evaluates stress patterns such as discoloration, dark spots, warm damaged regions, and yellowing.
+5. It returns a health score and a crop-aware care plan.
+
+## Important project logic
+
+The key improvement in the current version is that the app is no longer locked to a single crop assumption. It uses image cues such as warm-toned fruit textures, dark lesion density, yellow ratios, green ratios, and local vegetation color to infer crop identity more intelligently.
+
+This is especially important for cases like:
+
+- rotten potato being labeled incorrectly as corn
+- tomato-like fruit being mislabeled as pepper
+- generic plant names replacing distinct crop names when the model is uncertain
+
+The logic tries to prefer an exact crop name when the image shows strong crop-specific patterns, while keeping a safe fallback of Plant / crop when the evidence is weak.
+
+## What the app checks
+
+- plant presence
+- face rejection for privacy
+- visible crop or plant identity
+- suspected stress or disease severity
+- health score estimate
+- crop-specific treatment guidance
+
+## Local setup
 
 ```bash
 npm install
 npm run dev
 ```
 
-Open the local URL shown by Vite. Connect the dashboard to the ESP32-CAM IP address, then use the shutter to scan.
+Then open the Vite URL and connect the dashboard to the ESP32-CAM or use the device camera access button.
 
-Visitors can use **Use this device camera** on the HTTPS GitHub Pages site. The browser will ask for camera permission and prefer the rear camera on mobile devices. Visitors can also choose one or more existing plant images with **Choose plant image**. Selected images use the same plant-only validation, health screening, care plan, and gallery workflow. The first device scan downloads the plant checker model and may take a few seconds. The ESP32-CAM option is intended for a device on the same local network.
-
-Uploaded files must be JPG, PNG, or WebP images smaller than 10 MB, and the plant checker must recognize the image as a plant or crop. Other images are rejected before they enter the gallery. Generic labels such as `Hip`, `Tree`, `Fruit`, `Pot`, and `Plant` are not shown as exact crop names; the gallery uses `Plant / crop` when the general model cannot identify a species reliably.
-
-## Image validation contract
-
-The camera service `/health` endpoint must return JSON with an explicit plant result:
-
-```json
-{
-	"isPlant": true,
-	"containsFace": false,
-	"status": "healthy",
-	"confidence": 92
-}
-```
-
-The dashboard rejects an ESP32-CAM frame when `isPlant` or `plantDetected` is not `true`, or when `containsFace` or `faceDetected` is `true`. Device-camera captures use MobileNet for plant/crop classification and BlazeFace for dedicated face detection before an image can enter the gallery. MobileNet is a general ImageNet model, so it cannot reliably identify every crop species. Exact rose, apple, rice, or other crop identification requires a plant-specific model such as PlantNet with a backend/API key. Captures then receive a lightweight color-based visual health estimate for this college prototype. Camera and service errors are shown as rejected scans; no random diagnosis is generated.
-
-## Privacy
-
-Crop Doctor only checks whether a face appears in a frame so that people are not analyzed as crops. It does not infer or display age, gender, identity, or mood, and device-camera frames are processed locally in the browser rather than uploaded by this app.
-
-## Plant gallery
-
-Accepted captures are saved as image blobs in the visitor's browser using IndexedDB. They appear as thumbnails in the Plant gallery and can be deleted individually. Because GitHub Pages is a static host, each visitor has a private gallery on their own device; a shared gallery would require a server database and image storage.
-
-Selecting a thumbnail restores its image, result, confidence, and care plan in the scanner view. Saved scans also repopulate Recent results after a page reload. Identical image files are detected by content hash and are not added to the gallery more than once.
-
-When Supabase is configured, the gallery uses the shared `plant-images` Storage bucket and `scans` table. Create a public bucket with that name, then run this migration in Supabase SQL Editor:
-
-```sql
-alter table public.scans
-	add column if not exists image_hash text,
-	add column if not exists storage_path text;
-
-create unique index if not exists scans_image_hash_key
-	on public.scans (image_hash)
-	where image_hash is not null;
-```
-
-For the public demo, create the `plant-images` bucket as public and add these Storage policies:
-
-```sql
-create policy "Anyone can upload plant images"
-on storage.objects for insert to anon, authenticated
-with check (bucket_id = 'plant-images');
-
-create policy "Anyone can delete plant images"
-on storage.objects for delete to anon, authenticated
-using (bucket_id = 'plant-images');
-```
-
-The frontend uses the Supabase publishable key only. Never put a service-role key in `.env.production` or the browser.
-
-## GitHub Pages
-
-The published site is available at:
-
-https://kaleemullah19.github.io/crop-doctor-react/
-
-To publish a new build:
+## Deployment
 
 ```bash
+npm run build
 npm run deploy
 ```
- 
-## Analytics
 
-The project supports free Google Analytics 4 with privacy-conscious event tracking. It records page views and completed plant scans, but never sends camera frames or gallery images.
+The project is configured for GitHub Pages static hosting.
 
-1. Create a GA4 web data stream and copy its Measurement ID, such as `G-ABC123XYZ`.
-2. Copy `.env.example` to `.env.local` and set `VITE_GA_MEASUREMENT_ID`.
-3. Run `npm run deploy` with that environment variable available during the build.
+## Image / validation requirements
 
-Without a Measurement ID, analytics stays disabled automatically.
-npm run deploy
-```
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/)
+- Accepted formats: JPG, PNG, and WebP
+- Maximum file size: 10 MB
+- Images that are not clearly plants or crops are rejected before being added to the gallery
+- The system protects privacy by rejecting frames where a face is detected
+
+## Gallery and persistence
+
+Accepted scans are stored locally in the visitor browser. Files are deduplicated using a content hash, and saved scans can be reopened from the gallery with their diagnosis and recommendation list.
+
+## Privacy and ethics
+
+Crop Doctor only checks for face-like features to prevent people from being treated as crops. It does not identify people by age, gender, or identity. Device-camera frames are processed locally in the browser, and no camera feed is sent to a remote diagnostic service by default.
+
+## Presentation points for tomorrow
+
+- This project demonstrates how AI can support early crop health checks using low-cost camera inputs.
+- It combines plant detection, visual stress analysis, and simple agronomic guidance in one interface.
+- The system is designed for field use, mobile access, and quick diagnosis without requiring advanced equipment.
+- It already handles a real deployment workflow with GitHub Pages and browser-based processing.
+- The dynamic crop logic improves reliability for common crop and fruit cases, including potato, tomato, pepper, and general plant scans.
+
+## Notes
+
+This is a prototype designed for a college project and demo. For production agriculture, a more specialized plant classifier and a larger labeled dataset would improve accuracy across all crop types.
