@@ -337,8 +337,16 @@ const detectCropIdentity = (canvas, fallbackName = 'Plant / crop') => {
   const formattedFallback = formatPlantName(fallbackName)
   const fallbackLower = (formattedFallback || '').toLowerCase()
 
+  const potatoSceneRule =
+    stats.darkSpotRatio > 0.05 &&
+    stats.greenRatio > 0.18 &&
+    stats.warmRatio > 0.06 &&
+    stats.yellowRatio < 0.18 &&
+    stats.greenMean > stats.redMean * 0.75
+
   const potatoVisualRule =
     isPotatoLikeImage(canvas) ||
+    potatoSceneRule ||
     (stats.warmRatio > 0.08 &&
       stats.darkSpotRatio > 0.02 &&
       stats.greenRatio < 0.3 &&
@@ -349,7 +357,7 @@ const detectCropIdentity = (canvas, fallbackName = 'Plant / crop') => {
       stats.yellowRatio < 0.18)
 
   const cornLikeFrame =
-    stats.greenMean > stats.redMean && stats.greenRatio > 0.28 && stats.yellowRatio < 0.12 && stats.darkSpotRatio < 0.06
+    stats.greenMean > stats.redMean && stats.greenRatio > 0.28 && stats.yellowRatio > 0.12 && stats.darkSpotRatio < 0.06
 
   const potatoRule =
     fallbackLower.includes('potato') ||
@@ -781,9 +789,21 @@ function App() {
     const isRootCrop = crop.includes('potato') || crop.includes('tuber') || crop.includes('root')
     const recommendations = getRecommendations(isHealthy, diseases, plantName)
 
-    const cropFamily = isRootCrop
-      ? 'root crop'
-      : crop.includes('tomato') || crop.includes('pepper') || crop.includes('fruit') || crop.includes('berry')
+    if (isRootCrop) {
+      recommendations.length = 0
+      recommendations.push(
+        'Inspect the potato surface and surrounding soil for soft spots, bruising, dark lesions, or fungal pockets.'
+      )
+      recommendations.push('Check drainage and soil moisture before watering again, and remove any damaged tubers.')
+      recommendations.push('For potato: inspect tubers, soil drainage, and soft/dark lesions before watering again.')
+      recommendations.push(
+        'Remove damaged potato tubers and keep the soil drier when bruising, decay, or fungal pockets are visible.'
+      )
+      return recommendations
+    }
+
+    const cropFamily =
+      crop.includes('tomato') || crop.includes('pepper') || crop.includes('fruit') || crop.includes('berry')
         ? 'fruiting crop'
         : crop.includes('corn') || crop.includes('maize') || crop.includes('grain')
           ? 'grain crop'
@@ -797,20 +817,7 @@ function App() {
                   ? 'leafy plant'
                   : 'general crop'
 
-    if (isRootCrop) {
-      recommendations.length = 0
-      recommendations.push(
-        'Inspect the potato surface and surrounding soil for soft spots, bruising, dark lesions, or fungal pockets.'
-      )
-      recommendations.push('Check drainage and soil moisture before watering again, and remove any damaged tubers.')
-    }
-
-    if (cropFamily === 'root crop') {
-      recommendations.push('For potato: inspect tubers, soil drainage, and soft/dark lesions before watering again.')
-      recommendations.push(
-        'Remove damaged potato tubers and keep the soil drier when bruising, decay, or fungal pockets are visible.'
-      )
-    } else if (cropFamily === 'fruiting crop') {
+    if (cropFamily === 'fruiting crop') {
       recommendations.push(
         'For this fruiting crop: check leaf undersides for pests and keep foliage dry overnight to reduce fungal spread.'
       )
