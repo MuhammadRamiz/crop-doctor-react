@@ -717,17 +717,25 @@ function App() {
     let active = true
     const objectUrls = galleryObjectUrls.current
     getGalleryImages()
-      .then((images) => {
+      .then(async (images) => {
         if (!active) return
-        console.log(`🖼️ Loaded ${images.length} images into gallery`)
+
+        const normalizedImages = await Promise.all(
+          images.map(async (image) => {
+            const dynamicStatus = await getDynamicImageStatus(image)
+            return { ...image, status: dynamicStatus }
+          })
+        )
+
+        console.log(`🖼️ Loaded ${normalizedImages.length} images into gallery`)
         setLogs(
-          images.slice(0, 4).map((image) => ({
+          normalizedImages.slice(0, 4).map((image) => ({
             isHealthy: image.status === 'healthy',
             confidence: image.confidence,
             time: new Date(image.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
           }))
         )
-        const items = images.map((image) => {
+        const items = normalizedImages.map((image) => {
           const url = URL.createObjectURL(image.blob)
           objectUrls.push(url)
           return { ...image, url }
@@ -803,6 +811,35 @@ function App() {
     setCameraStatus(nextConnected ? 'ONLINE' : 'OFFLINE')
     setReadoutLeft(nextConnected ? 'live feed connected' : 'device disconnected')
     setReadoutRight(nextConnected ? ip : 'ready')
+  }
+
+  const getDynamicImageStatus = async (image) => {
+    if (!image?.blob) return image?.status === 'healthy' ? 'healthy' : 'risk'
+
+    try {
+      const blob = image.blob instanceof Blob ? image.blob : new Blob([image.blob])
+      const imageElement = await new Promise((resolve, reject) => {
+        const createdImage = new Image()
+        createdImage.onload = () => resolve(createdImage)
+        createdImage.onerror = () => reject(new Error('image read error'))
+        createdImage.src = URL.createObjectURL(blob)
+      })
+
+      const canvas = document.createElement('canvas')
+      const scale = Math.min(1, 1280 / Math.max(imageElement.naturalWidth, imageElement.naturalHeight))
+      canvas.width = Math.round(imageElement.naturalWidth * scale)
+      canvas.height = Math.round(imageElement.naturalHeight * scale)
+      const context = canvas.getContext('2d')
+      context.drawImage(imageElement, 0, 0, canvas.width, canvas.height)
+
+      const diseases = analyzeDiseaseIndicators(canvas)
+      const plantName = image.plantName || 'Plant / crop'
+      const result = estimatePlantHealth(canvas, diseases, plantName)
+
+      return result.confidence < 50 || !result.isHealthy ? 'risk' : 'healthy'
+    } catch {
+      return image?.status === 'healthy' ? 'healthy' : 'risk'
+    }
   }
 
   const addGalleryImage = async (blob, metadata) => {
@@ -898,7 +935,6 @@ function App() {
       if (brightness < 45) continue
       visiblePixels += 1
 
-      // Only flag disease when the pattern is consistently abnormal, not just colourful.
       if (red > 150 && green > 110 && green < red && blue < green && brightness > 120) fungalPixels += 1
       if (red < 100 && green < 90 && blue < 85 && brightness > 60) bacterialPixels += 1
       if ((red > 200 || blue > 200) && Math.abs(red - green) > 60 && brightness > 80) pestPixels += 1
@@ -911,28 +947,77 @@ function App() {
     const nutrientRatio = nutrientPixels / Math.max(visiblePixels, 1)
 
     const diseases = []
-    if ((fungalRatio > 0.08 && colorStats.greenRatio > 0.12) || isRottenTomatoImage(canvas))
+    const hasStrongLeafColor = colorStats.greenRatio > 0.18
+    const hasClearEvidence =
+      fungalRatio > 0.3 ||
+      bacterialRatio > 0.25 ||
+      pestRatio > 0.35 ||
+      nutrientRatio > 0.42 ||
+      (isRottenTomatoImage(canvas) && (colorStats.darkSpotRatio > 0.08 || colorStats.yellowRatio > 0.14))
+
+    if (fungalRatio > 0.3 && hasStrongLeafColor) {
       diseases.push({
         type: 'fungal',
-        severity: Math.min(100, Math.round((fungalRatio + 0.05) * 420)),
+        severity: Math.min(100, Math.round((fungalRatio + 0.1) * 180)),
         name: 'Fungal infection',
       })
-    if ((bacterialRatio > 0.07 && colorStats.greenRatio > 0.12) || isRottenTomatoImage(canvas))
+    }
+    if (bacterialRatio > 0.25 && hasStrongLeafColor && colorStats.darkSpotRatio > 0.06) {
       diseases.push({
         type: 'bacterial',
-        severity: Math.min(100, Math.round((bacterialRatio + 0.05) * 420)),
+        severity: Math.min(100, Math.round((bacterialRatio + 0.1) * 200)),
         name: 'Bacterial disease',
       })
-    if (pestRatio > 0.12)
-      diseases.push({ type: 'pest', severity: Math.min(100, Math.round(pestRatio * 320)), name: 'Pest damage' })
-    if (nutrientRatio > 0.18)
+    }
+    if (pestRatio > 0.35 && colorStats.saturatedRatio > 0.3 && hasClearEvidence) {
+      diseases.push({ type: 'pest', severity: Math.min(100, Math.round(pestRatio * 180)), name: 'Pest damage' })
+    }
+    if (nutrientRatio > 0.42 && colorStats.yellowRatio > 0.16) {
       diseases.push({
         type: 'nutrient',
-        severity: Math.min(100, Math.round(nutrientRatio * 260)),
+        severity: Math.min(100, Math.round(nutrientRatio * 170)),
         name: 'Nutrient deficiency',
       })
+    }
 
     return diseases.sort((a, b) => b.severity - a.severity)
+  }
+
+  const getCropHealthProfile = (plantName = 'Plant / crop') => {
+    const crop = (plantName || '').toLowerCase()
+
+    if (crop.includes('potato') || crop.includes('root') || crop.includes('tuber')) {
+      return { threshold: 54, severityLimit: 26, stressPenalty: 0.28 }
+    }
+    if (crop.includes('tomato') || crop.includes('pepper') || crop.includes('berry') || crop.includes('fruit')) {
+      return { threshold: 56, severityLimit: 30, stressPenalty: 0.22 }
+    }
+    if (crop.includes('corn') || crop.includes('maize') || crop.includes('grain')) {
+      return { threshold: 55, severityLimit: 28, stressPenalty: 0.23 }
+    }
+    if (
+      crop.includes('flower') ||
+      crop.includes('rose') ||
+      crop.includes('sunflower') ||
+      crop.includes('cactus') ||
+      crop.includes('succulent')
+    ) {
+      return { threshold: 52, severityLimit: 32, stressPenalty: 0.2 }
+    }
+    if (
+      crop.includes('leaf') ||
+      crop.includes('broccoli') ||
+      crop.includes('cauliflower') ||
+      crop.includes('cucumber') ||
+      crop.includes('zucchini') ||
+      crop.includes('squash') ||
+      crop.includes('crop') ||
+      crop.includes('plant')
+    ) {
+      return { threshold: 58, severityLimit: 24, stressPenalty: 0.24 }
+    }
+
+    return { threshold: 58, severityLimit: 24, stressPenalty: 0.24 }
   }
 
   const getRecommendations = (isHealthy, diseases = [], plantName = '') => {
@@ -1242,7 +1327,7 @@ function App() {
     return { accepted: true, plantName: finalPlantName }
   }
 
-  const estimatePlantHealth = (canvas, diseases = []) => {
+  const estimatePlantHealth = (canvas, diseases = [], plantName = 'Plant / crop') => {
     const context = canvas.getContext('2d')
     const { data } = context.getImageData(0, 0, canvas.width, canvas.height)
     let greenPixels = 0
@@ -1264,24 +1349,26 @@ function App() {
     const greenRatio = greenPixels / Math.max(visiblePixels, 1)
     const stressRatio = stressPixels / Math.max(visiblePixels, 1)
     const diseaseSeverity = diseases.reduce((sum, disease) => sum + (disease.severity || 0), 0)
+    const noDisease = diseases.length === 0
+    const strongRiskEvidence = diseaseSeverity >= 62 || (greenRatio < 0.07 && stressRatio > 0.22)
+    const moderateRiskEvidence = diseaseSeverity >= 38 && diseases.length >= 2
+    const plausibleHealthyScene = greenRatio >= 0.12 && stressRatio <= 0.18
 
-    let healthScore = Math.round(Math.min(98, Math.max(35, 68 + greenRatio * 40 - stressRatio * 35)))
-
-    if (diseaseSeverity > 0) {
-      healthScore = Math.max(20, healthScore - Math.min(45, diseaseSeverity * 0.35))
+    let confidence = 88
+    if (strongRiskEvidence) {
+      confidence = 38
+    } else if (moderateRiskEvidence) {
+      confidence = 46
+    } else if (!noDisease) {
+      confidence = 58
     }
 
-    if (diseaseSeverity === 0 && greenRatio > 0.2) {
-      healthScore = Math.max(healthScore, 78)
-    }
+    if (noDisease && plausibleHealthyScene) confidence = 90
+    if (!noDisease && plausibleHealthyScene) confidence = 64
 
-    if (isRottenTomatoImage(canvas) || diseaseSeverity > 35) {
-      healthScore = Math.min(healthScore, 42)
-    }
+    const isHealthy = confidence >= 55
 
-    const isHealthy = healthScore >= 60 && diseaseSeverity <= 20
-
-    return { isHealthy, confidence: healthScore }
+    return { isHealthy, confidence: Math.max(35, Math.min(96, confidence)) }
   }
 
   const captureDeviceFrame = async () => {
@@ -1326,7 +1413,7 @@ function App() {
         setFeedImage(URL.createObjectURL(blob))
         setStampVisible(false)
         const diseases = analyzeDiseaseIndicators(canvas)
-        const result = estimatePlantHealth(canvas, diseases)
+        const result = estimatePlantHealth(canvas, diseases, validation.plantName)
         setReadoutLeft('visual health screening complete')
         setReadoutRight('visual health score')
         setHintText('screening estimate only: confirm results with an agronomist or trained model')
@@ -1381,7 +1468,7 @@ function App() {
       }
 
       const diseases = analyzeDiseaseIndicators(canvas)
-      const result = estimatePlantHealth(canvas, diseases)
+      const result = estimatePlantHealth(canvas, diseases, validation.plantName)
       const imageRecord = await addGalleryImage(file, {
         source: 'device gallery',
         plantName: validation.plantName,
