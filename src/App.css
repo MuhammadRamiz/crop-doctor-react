@@ -1098,7 +1098,13 @@ nav {
     transform 0.2s ease;
 }
 
-.delete-all-btn:hover {
+.delete-all-btn:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+  transform: none;
+}
+
+.delete-all-btn:hover:not(:disabled) {
   background: rgba(193, 87, 46, 0.16);
   transform: translateY(-1px);
 }
