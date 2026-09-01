@@ -246,6 +246,19 @@ const hasVegetationColor = (canvas) => {
   return vegetationPixels / Math.max(visiblePixels, 1) >= 0.08
 }
 
+const isLikelyPlantScene = (canvas) => {
+  const sceneStats = getSceneCompositionStats(canvas)
+  const edgeDensity = getImageEdgeDensity(canvas)
+  const greenRatio = sceneStats.greenRatio || 0
+  const vegetationCheck = hasVegetationColor(canvas) || greenRatio > 0.02
+  const faceLikeSkin = sceneStats.skinRatio > 0.25 && greenRatio < 0.22
+  const documentLike = sceneStats.neutralRatio > 0.7 && greenRatio < 0.12
+  const posterLike = isPrintedGraphicLikeImage(canvas) && greenRatio < 0.25
+  const naturalTexture = edgeDensity > 0.0004 || greenRatio > 0.04 || vegetationCheck
+
+  return vegetationCheck && naturalTexture && !faceLikeSkin && !documentLike && !posterLike
+}
+
 const getSceneCompositionStats = (canvas) => {
   const context = canvas.getContext('2d', { willReadFrequently: true })
   const { data } = context.getImageData(0, 0, canvas.width, canvas.height)
@@ -333,32 +346,60 @@ const isPrintedGraphicLikeImage = (canvas) => {
   let samples = 0
   let totalSaturation = 0
   let totalBrightness = 0
+  let lowVarianceBlocks = 0
 
   for (let y = 0; y < height; y += step) {
     for (let x = 0; x < width; x += step) {
-      const index = (y * width + x) * 4
-      const red = data[index]
-      const green = data[index + 1]
-      const blue = data[index + 2]
-      const maxChannel = Math.max(red, green, blue)
-      const minChannel = Math.min(red, green, blue)
-      const saturation = maxChannel - minChannel
-      const brightness = (red + green + blue) / 3
+      let blockLum = 0
+      let blockVariance = 0
+      let blockPixelCount = 0
+      let blockSaturationTotal = 0
 
-      if (brightness < 25) continue
+      for (let yy = y; yy < Math.min(y + step, height); yy += 2) {
+        for (let xx = x; xx < Math.min(x + step, width); xx += 2) {
+          const index = (yy * width + xx) * 4
+          const red = data[index]
+          const green = data[index + 1]
+          const blue = data[index + 2]
+          const brightness = (red + green + blue) / 3
+          const maxChannel = Math.max(red, green, blue)
+          const minChannel = Math.min(red, green, blue)
+          const saturation = maxChannel - minChannel
 
-      samples += 1
-      totalSaturation += saturation
-      totalBrightness += brightness
+          blockLum += brightness
+          blockSaturationTotal += saturation
+          blockPixelCount += 1
+        }
+      }
 
+      if (blockPixelCount === 0) continue
+
+      const avgLum = blockLum / blockPixelCount
+      for (let yy = y; yy < Math.min(y + step, height); yy += 2) {
+        for (let xx = x; xx < Math.min(x + step, width); xx += 2) {
+          const index = (yy * width + xx) * 4
+          const red = data[index]
+          const green = data[index + 1]
+          const blue = data[index + 2]
+          const brightness = (red + green + blue) / 3
+          blockVariance += (brightness - avgLum) ** 2
+        }
+      }
+
+      const avgSaturation = blockSaturationTotal / blockPixelCount
+      const avgBrightness = avgLum
       const isPrimaryLike =
-        (maxChannel > 190 && saturation > 90 && minChannel < 100) ||
-        (red > 180 && green > 160 && blue < 90) ||
-        (red > 160 && green < 110 && blue < 110) ||
-        (red < 110 && green > 160 && blue < 110) ||
-        (red < 110 && green < 110 && blue > 160)
+        (avgBrightness > 150 && avgSaturation > 70) ||
+        (avgBrightness > 125 && avgSaturation > 90) ||
+        (red > 160 && green > 160 && blue < 110) ||
+        (red > 160 && green < 110 && blue < 110)
 
       if (isPrimaryLike) primaryColorPixels += 1
+      if (avgSaturation > 60 && avgBrightness > 95 && blockVariance < 1000) lowVarianceBlocks += 1
+
+      samples += 1
+      totalSaturation += avgSaturation
+      totalBrightness += avgBrightness
     }
   }
 
@@ -367,9 +408,10 @@ const isPrintedGraphicLikeImage = (canvas) => {
   const avgSaturation = totalSaturation / samples
   const avgBrightness = totalBrightness / samples
   const primaryRatio = primaryColorPixels / samples
+  const flatBlockRatio = lowVarianceBlocks / samples
   const edgeDensity = getImageEdgeDensity(canvas)
 
-  return avgSaturation > 75 && avgBrightness > 96 && primaryRatio > 0.32 && edgeDensity > 0.17
+  return avgSaturation > 68 && avgBrightness > 95 && primaryRatio > 0.25 && flatBlockRatio > 0.45 && edgeDensity < 0.25
 }
 
 const getImageColorStats = (canvas) => {
@@ -1084,19 +1126,33 @@ function App() {
   }
 
   const validatePlantFrame = async (canvas) => {
-    if (!plantModel.current || !faceModel.current)
+    if (!plantModel.current && !faceModel.current) {
+      const fallbackPlantScene = isLikelyPlantScene(canvas)
+      if (fallbackPlantScene) {
+        return { accepted: true, plantName: detectCropIdentity(canvas, 'Plant / crop'), fallback: true }
+      }
       return {
         accepted: false,
-        reason: classifierStatus === 'loading' ? 'plant checker is still loading' : 'plant checker unavailable',
+        reason: 'plant checker unavailable',
       }
+    }
 
-    const faces = await faceModel.current.estimateFaces(canvas, false)
-    const confidentFace = faces.some((face) => {
-      const probability =
-        typeof face.probability?.dataSync === 'function' ? face.probability.dataSync()[0] : face.probability
-      return probability >= 0.9
-    })
-    if (confidentFace) return { accepted: false, reason: 'person detected · frame rejected' }
+    if (faceModel.current) {
+      const faces = await faceModel.current.estimateFaces(canvas, false)
+      const confidentFace = faces.some((face) => {
+        const probability =
+          typeof face.probability?.dataSync === 'function' ? face.probability.dataSync()[0] : face.probability
+        return probability >= 0.95 && (face.landmarks?.length || 0) > 0
+      })
+      if (confidentFace) return { accepted: false, reason: 'person detected · frame rejected' }
+    }
+
+    if (!plantModel.current) {
+      if (isLikelyPlantScene(canvas)) {
+        return { accepted: true, plantName: detectCropIdentity(canvas, 'Plant / crop'), fallback: true }
+      }
+      return { accepted: false, reason: 'Only plant, crop, fruit, or vegetable images are supported.' }
+    }
 
     const predictions = await plantModel.current.classify(canvas, 10)
     const potatoHeuristic = isPotatoLikeImage(canvas)
@@ -1143,7 +1199,21 @@ function App() {
       !tomatoHeuristic &&
       !rottenTomatoHeuristic
 
-    if (!hasPlant || !hasStrongVegetation || hasFaceLikeSkin || isDocumentLike || isPosterLike || posterLike) {
+    const hasNaturalTexture = edgeDensity > 0.08 && (sceneStats.greenRatio > 0.1 || hasVegetationColor(canvas))
+
+    if (
+      !hasPlant ||
+      !hasStrongVegetation ||
+      !hasNaturalTexture ||
+      hasFaceLikeSkin ||
+      isDocumentLike ||
+      isPosterLike ||
+      posterLike
+    ) {
+      const fallbackAccepted = isLikelyPlantScene(canvas)
+      if (fallbackAccepted) {
+        return { accepted: true, plantName: detectCropIdentity(canvas, 'Plant / crop'), fallback: true }
+      }
       return {
         accepted: false,
         reason: 'Only plant, crop, fruit, or vegetable images are supported. Personal and ID images are rejected.',
