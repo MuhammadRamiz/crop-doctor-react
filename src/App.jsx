@@ -710,17 +710,22 @@ function App() {
     return diseases.sort((a, b) => b.severity - a.severity)
   }
 
-  const getRecommendations = (isHealthy, diseases = []) => {
+  const getRecommendations = (isHealthy, diseases = [], plantName = '') => {
     const recommendations = []
+    const rootCrop = /(potato|tuber|root)/i.test(plantName || '')
 
     if (isHealthy) {
       recommendations.push('Keep the current watering and light routine consistent.')
       recommendations.push('Check leaves regularly for early discoloration or pests.')
       recommendations.push('Keep airflow around the plant clear to reduce moisture buildup.')
+    } else if (rootCrop) {
+      recommendations.push(
+        'Inspect the potato surface and surrounding soil for soft spots, bruising, dark lesions, or fungal pockets.'
+      )
+      recommendations.push('Check drainage and soil moisture before watering again, and remove any damaged tubers.')
     } else {
-      recommendations.push('Inspect both sides of the leaves for pests, spots, or yellowing.')
-      recommendations.push('Check soil moisture and drainage before watering again.')
-      recommendations.push('Remove severely damaged leaves and compare a new scan soon.')
+      recommendations.push('Inspect the affected crop area for visible spots, yellowing, soft tissue, or pest damage.')
+      recommendations.push('Check soil moisture and drainage before watering again, then compare with a new scan soon.')
     }
 
     // Disease-specific recommendations
@@ -747,31 +752,29 @@ function App() {
 
   const getCropRecommendations = (isHealthy, plantName, diseases = []) => {
     const crop = (plantName || 'plant').toLowerCase()
-    const recommendations = getRecommendations(isHealthy, diseases)
+    const isRootCrop = crop.includes('potato') || crop.includes('tuber') || crop.includes('root')
+    const recommendations = getRecommendations(isHealthy, diseases, plantName)
 
-    const cropFamily =
-      crop.includes('potato') || crop.includes('tuber')
-        ? 'root crop'
-        : crop.includes('tomato') || crop.includes('pepper') || crop.includes('fruit') || crop.includes('berry')
-          ? 'fruiting crop'
-          : crop.includes('corn') || crop.includes('maize') || crop.includes('grain')
-            ? 'grain crop'
-            : crop.includes('banana') || crop.includes('grape') || crop.includes('grapevine') || crop.includes('orange')
-              ? 'perennial crop'
-              : crop.includes('flower') || crop.includes('rose') || crop.includes('sunflower')
-                ? 'flowering plant'
-                : crop.includes('cactus') || crop.includes('succulent')
-                  ? 'succulent'
-                  : crop.includes('leaf') || crop.includes('plant') || crop.includes('crop')
-                    ? 'leafy plant'
-                    : 'general crop'
+    const cropFamily = isRootCrop
+      ? 'root crop'
+      : crop.includes('tomato') || crop.includes('pepper') || crop.includes('fruit') || crop.includes('berry')
+        ? 'fruiting crop'
+        : crop.includes('corn') || crop.includes('maize') || crop.includes('grain')
+          ? 'grain crop'
+          : crop.includes('banana') || crop.includes('grape') || crop.includes('grapevine') || crop.includes('orange')
+            ? 'perennial crop'
+            : crop.includes('flower') || crop.includes('rose') || crop.includes('sunflower')
+              ? 'flowering plant'
+              : crop.includes('cactus') || crop.includes('succulent')
+                ? 'succulent'
+                : crop.includes('leaf') || crop.includes('plant') || crop.includes('crop')
+                  ? 'leafy plant'
+                  : 'general crop'
 
     if (cropFamily === 'root crop') {
+      recommendations.push('For potato: inspect tubers, soil drainage, and soft/dark lesions before watering again.')
       recommendations.push(
-        'For this root crop: inspect tubers, soil drainage, and soft/dark lesions before watering again.'
-      )
-      recommendations.push(
-        'Remove damaged tubers and keep the soil drier when bruising, decay, or fungal pockets are visible.'
+        'Remove damaged potato tubers and keep the soil drier when bruising, decay, or fungal pockets are visible.'
       )
     } else if (cropFamily === 'fruiting crop') {
       recommendations.push(
