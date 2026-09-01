@@ -1003,7 +1003,12 @@ function App() {
       })
       .sort((first, second) => second.probability - first.probability)[0]
 
-    if (!hasPlant) return { accepted: false, reason: 'plant or crop not detected' }
+    if (!hasPlant) {
+      return {
+        accepted: false,
+        reason: 'Only plant, crop, fruit, or vegetable images are supported. Personal and ID images are rejected.',
+      }
+    }
 
     if (potatoHeuristic) {
       return { accepted: true, plantName: 'Potato' }
@@ -1176,6 +1181,11 @@ function App() {
     event.target.value = ''
     if (files.length === 0) return
     if (scanInProgress.current) return
+
+    if (files.length > 20) {
+      setUploadError('Upload up to 20 images per batch. Please choose fewer images.')
+      return
+    }
 
     setUploadError('')
     scanInProgress.current = true
@@ -1561,7 +1571,7 @@ function App() {
                     >
                       <path d="M12 16V4M7 9l5-5 5 5M5 20h14" />
                     </svg>
-                    Choose plant image
+                    Choose image
                   </button>
                   {uploadError && (
                     <div className="upload-error" role="alert" aria-live="assertive">
@@ -1719,16 +1729,15 @@ function App() {
                   Plant gallery
                   <div className="gallery-header-actions">
                     <span>{gallery.length} saved</span>
-                    {gallery.length > 0 && (
-                      <button
-                        type="button"
-                        className="delete-all-btn"
-                        onClick={() => setShowDeleteAllConfirm(true)}
-                        aria-label="Delete all saved gallery images"
-                      >
-                        Delete all
-                      </button>
-                    )}
+                    <button
+                      type="button"
+                      className="delete-all-btn"
+                      onClick={() => setShowDeleteAllConfirm(true)}
+                      aria-label="Delete all saved gallery images"
+                      disabled={gallery.length === 0}
+                    >
+                      {gallery.length > 0 ? 'Delete all' : 'Delete all'}
+                    </button>
                   </div>
                 </div>
                 {showGalleryHint && (
@@ -1737,7 +1746,7 @@ function App() {
                   </div>
                 )}
                 {gallery.length === 0 ? (
-                  <p className="gallery-empty">Accepted plant captures will appear here.</p>
+                  <p className="gallery-empty">Accepted captures will appear here.</p>
                 ) : (
                   <div className="gallery-grid">
                     {gallery.map((image) => (
