@@ -1,102 +1,157 @@
-# Crop Doctor
+# Crop Doctor AI
 
-Crop Doctor is a React + Vite web app for checking plant and crop health from a camera or uploaded image. The app validates that the image is a real plant, rejects non-plant frames, estimates health from visible color and stress patterns, and gives a practical action plan for the crop or plant.
+A smart crop health diagnosis dashboard designed to help users scan plants, detect visible stress, and receive practical care guidance from a browser-based interface.
 
-This project is designed for a demo, classroom presentation, and field-friendly prototype workflow. It is not a scientific diagnosis engine, but it demonstrates a real-time crop-health analysis flow in a browser.
+Crop Doctor combines browser camera access, image validation, visual plant analysis, and responsive dashboard experience in one lightweight application. It is built for demo use, classroom presentation, field scouting, and quick AI-assisted crop review.
 
-## Highlights
+## Project Summary
 
-- Camera or image upload flow for plant inspection
-- Plant-only validation using MobileNet + BlazeFace
-- Dynamic crop-aware naming for common plants, vegetables, fruits, and crops
-- Disease and stress heuristics for rust, spots, yellowing, fungal patterns, and nutrient stress
-- Crop-specific care recommendations
-- Local gallery storage with duplicate detection and saved scan history
-- GitHub Pages deployment setup for demo hosting
+Crop Doctor helps farmers, students, and researchers quickly assess whether a plant looks healthy or at risk based on visible image indicators such as:
 
-## Live demo
+- leaf discoloration
+- dark lesion patterns
+- fungal or bacterial stress cues
+- warm/damaged tissue concentration
+- plant and crop identity signals
+
+The app validates that the frame is actually a plant, rejects faces for privacy, and provides a health score together with crop-aware recommendations.
+
+## Live Demo
 
 https://muhammadramiz.github.io/crop-doctor-react/
 
-## Tech stack
+## Why This Project Matters
+
+Modern agriculture increasingly depends on rapid monitoring and low-cost decision support tools. Crop Doctor addresses this by making crop health checking accessible through a simple interface that works directly in the browser.
+
+This solution is especially useful for:
+
+- quick field inspections
+- classroom and research demonstrations
+- crop monitoring in remote areas
+- early warning for visible plant stress
+- simple, browser-based AI evaluation without heavy infrastructure
+
+## Key Features
+
+- Camera capture and image upload support
+- Real-time plant frame validation
+- Face rejection for privacy protection
+- Crop and plant classification using visual cues
+- Health scoring for visible crop stress and disease indicators
+- Dynamic crop-aware recommendations for common crops and fruits
+- Local gallery history with duplicate image detection
+- Mobile, tablet, and desktop responsive interface
+- GitHub Pages deployment for quick demo hosting
+
+## Responsive Design
+
+The application is designed to work smoothly across multiple screen sizes:
+
+- Mobile view: optimized for phone-based scanning and quick field capture
+- Tablet view: balanced viewing with easy interaction for field inspection
+- Desktop view: full dashboard layout for demos, presentations, and review workflows
+
+This makes the app practical for both on-site field use and presentation environments.
+
+## Tech Stack
 
 - React 19
 - Vite
+- JavaScript / JSX
 - TensorFlow.js MobileNet
 - TensorFlow.js BlazeFace
-- IndexedDB for browser gallery storage
-- GitHub Pages deployment
+- IndexedDB for local gallery persistence
+- GitHub Pages for deployment
 
-## How it works
+## How It Works
 
-1. A user captures or uploads a plant image.
-2. The app checks whether the frame contains a face and whether the image looks like a plant or crop.
-3. It uses a general image classifier to estimate the crop/plant type.
-4. It evaluates stress patterns such as discoloration, dark spots, warm damaged regions, and yellowing.
-5. It returns a health score and a crop-aware care plan.
+1. The user captures or uploads a plant image.
+2. The app checks whether the image contains a face and whether it looks like a plant or crop.
+3. The system estimates crop identity using visual pattern matching and crop-specific heuristics.
+4. It evaluates stress patterns such as yellowing, dark spots, warm damage, and fungal-like texture.
+5. The app produces a health score and practical care guidance for the diagnosed crop.
 
-## Important project logic
+## Smart Crop Identification
 
-The key improvement in the current version is that the app is no longer locked to a single crop assumption. It uses image cues such as warm-toned fruit textures, dark lesion density, yellow ratios, green ratios, and local vegetation color to infer crop identity more intelligently.
+The system is designed to avoid weak generic labels and provide more useful crop-aware outputs. It focuses on better handling of real-world cases such as:
 
-This is especially important for cases like:
+- potato misidentified as corn
+- tomato misread as pepper
+- generic plant labels replacing specific crop names
+- inaccurate leaf-only recommendations for root crops
 
-- rotten potato being labeled incorrectly as corn
-- tomato-like fruit being mislabeled as pepper
-- generic plant names replacing distinct crop names when the model is uncertain
+The current logic prefers crop-specific visual evidence before falling back to a general label, making the output more reliable for common plant and fruit use cases.
 
-The logic tries to prefer an exact crop name when the image shows strong crop-specific patterns, while keeping a safe fallback of Plant / crop when the evidence is weak.
-
-## What the app checks
+## What the App Assesses
 
 - plant presence
-- face rejection for privacy
-- visible crop or plant identity
-- suspected stress or disease severity
+- crop or fruit identity
+- visual stress and disease indicators
 - health score estimate
-- crop-specific treatment guidance
+- practical next steps for care and monitoring
 
-## Local setup
+## Local Setup
 
 ```bash
 npm install
 npm run dev
 ```
 
-Then open the Vite URL and connect the dashboard to the ESP32-CAM or use the device camera access button.
+Then open the local Vite URL in the browser and either use the camera or upload an image for diagnosis.
+
+## Production Build
+
+```bash
+npm run build
+```
 
 ## Deployment
+
+The project is configured for GitHub Pages static hosting.
 
 ```bash
 npm run build
 npm run deploy
 ```
 
-The project is configured for GitHub Pages static hosting.
+## Supported Image Types
 
-## Image / validation requirements
+- JPG
+- PNG
+- WebP
+- Maximum recommended size: 10 MB
 
-- Accepted formats: JPG, PNG, and WebP
-- Maximum file size: 10 MB
-- Images that are not clearly plants or crops are rejected before being added to the gallery
-- The system protects privacy by rejecting frames where a face is detected
+Images that do not clearly look like a plant or crop are rejected before being saved to the gallery.
 
-## Gallery and persistence
+## Gallery and Persistence
 
-Accepted scans are stored locally in the visitor browser. Files are deduplicated using a content hash, and saved scans can be reopened from the gallery with their diagnosis and recommendation list.
+Accepted scans are stored locally in the browser using IndexedDB. Duplicate uploads are filtered using a content hash, and previously analyzed scans can be reopened from the gallery with their diagnosis details.
 
-## Privacy and ethics
+## Privacy and Ethics
 
-Crop Doctor only checks for face-like features to prevent people from being treated as crops. It does not identify people by age, gender, or identity. Device-camera frames are processed locally in the browser, and no camera feed is sent to a remote diagnostic service by default.
+Crop Doctor includes face rejection logic to protect privacy and prevent non-plant subjects from being treated as crop targets. The app processes camera data locally in the browser without sending the image feed to a remote diagnostic service by default.
 
-## Presentation points for tomorrow
+## Presentation Talking Points
 
-- This project demonstrates how AI can support early crop health checks using low-cost camera inputs.
-- It combines plant detection, visual stress analysis, and simple agronomic guidance in one interface.
-- The system is designed for field use, mobile access, and quick diagnosis without requiring advanced equipment.
-- It already handles a real deployment workflow with GitHub Pages and browser-based processing.
-- The dynamic crop logic improves reliability for common crop and fruit cases, including potato, tomato, pepper, and general plant scans.
+- This project demonstrates AI-powered crop health assessment using affordable, browser-based tools.
+- It combines image validation, crop detection, disease heuristics, and actionable recommendations in one dashboard.
+- The interface is responsive and supports mobile, tablet, and desktop experience for field and presentation use.
+- The app is designed for quick field decisions, early stress detection, and educational demos.
+- It provides a practical foundation for future agriculture AI systems with stronger crop-specific classification models.
 
-## Notes
+## Project Status
 
-This is a prototype designed for a college project and demo. For production agriculture, a more specialized plant classifier and a larger labeled dataset would improve accuracy across all crop types.
+This project is a prototype and demonstration platform designed for research, presentation, and concept validation. It is suitable for a classroom demo or early-stage product prototype, with room for improved model accuracy and real agricultural dataset expansion.
+
+## Future Improvements
+
+- stronger crop-specific training model
+- larger plant and disease dataset
+- better health scoring for more crop varieties
+- regional crop knowledge and region-specific care plans
+- integration with backend analytics and cloud storage
+
+## Contributors
+
+This prototype was developed as a collaborative AI and agriculture project focused on smart crop diagnosis, accessible field tools, and responsive web experience.
