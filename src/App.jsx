@@ -253,6 +253,7 @@ const getSceneCompositionStats = (canvas) => {
   let greenPixels = 0
   let skinPixels = 0
   let neutralPixels = 0
+  let saturatedPixels = 0
 
   for (let index = 0; index < data.length; index += 20) {
     const red = data[index]
@@ -281,13 +282,94 @@ const getSceneCompositionStats = (canvas) => {
     if (brightness > 180 && Math.abs(red - green) < 18 && Math.abs(green - blue) < 18) {
       neutralPixels += 1
     }
+
+    const maxChannel = Math.max(red, green, blue)
+    const minChannel = Math.min(red, green, blue)
+    if (maxChannel - minChannel > 75 && maxChannel > 100) {
+      saturatedPixels += 1
+    }
   }
 
   return {
     greenRatio: greenPixels / Math.max(visiblePixels, 1),
     skinRatio: skinPixels / Math.max(visiblePixels, 1),
     neutralRatio: neutralPixels / Math.max(visiblePixels, 1),
+    saturatedRatio: saturatedPixels / Math.max(visiblePixels, 1),
   }
+}
+
+const getImageEdgeDensity = (canvas) => {
+  const context = canvas.getContext('2d', { willReadFrequently: true })
+  const { width, height } = canvas
+  const image = context.getImageData(0, 0, width, height)
+  const { data } = image
+  let edges = 0
+  let samples = 0
+
+  for (let y = 0; y < height - 1; y += 4) {
+    for (let x = 0; x < width - 1; x += 4) {
+      const index = (y * width + x) * 4
+      const luminance = (data[index] + data[index + 1] + data[index + 2]) / 3
+      const rightIndex = (y * width + x + 4) * 4
+      const rightLuminance = (data[rightIndex] + data[rightIndex + 1] + data[rightIndex + 2]) / 3
+      const downIndex = ((y + 4) * width + x) * 4
+      const downLuminance = (data[downIndex] + data[downIndex + 1] + data[downIndex + 2]) / 3
+      const delta = Math.abs(luminance - rightLuminance) + Math.abs(luminance - downLuminance)
+
+      if (delta > 24) edges += 1
+      samples += 1
+    }
+  }
+
+  return samples ? edges / samples : 0
+}
+
+const isPrintedGraphicLikeImage = (canvas) => {
+  const context = canvas.getContext('2d', { willReadFrequently: true })
+  const { width, height } = canvas
+  const { data } = context.getImageData(0, 0, width, height)
+  const step = 12
+  let primaryColorPixels = 0
+  let samples = 0
+  let totalSaturation = 0
+  let totalBrightness = 0
+
+  for (let y = 0; y < height; y += step) {
+    for (let x = 0; x < width; x += step) {
+      const index = (y * width + x) * 4
+      const red = data[index]
+      const green = data[index + 1]
+      const blue = data[index + 2]
+      const maxChannel = Math.max(red, green, blue)
+      const minChannel = Math.min(red, green, blue)
+      const saturation = maxChannel - minChannel
+      const brightness = (red + green + blue) / 3
+
+      if (brightness < 25) continue
+
+      samples += 1
+      totalSaturation += saturation
+      totalBrightness += brightness
+
+      const isPrimaryLike =
+        (maxChannel > 190 && saturation > 90 && minChannel < 100) ||
+        (red > 180 && green > 160 && blue < 90) ||
+        (red > 160 && green < 110 && blue < 110) ||
+        (red < 110 && green > 160 && blue < 110) ||
+        (red < 110 && green < 110 && blue > 160)
+
+      if (isPrimaryLike) primaryColorPixels += 1
+    }
+  }
+
+  if (samples === 0) return false
+
+  const avgSaturation = totalSaturation / samples
+  const avgBrightness = totalBrightness / samples
+  const primaryRatio = primaryColorPixels / samples
+  const edgeDensity = getImageEdgeDensity(canvas)
+
+  return avgSaturation > 75 && avgBrightness > 96 && primaryRatio > 0.32 && edgeDensity > 0.17
 }
 
 const getImageColorStats = (canvas) => {
@@ -1048,11 +1130,20 @@ function App() {
       .sort((first, second) => second.probability - first.probability)[0]
 
     const sceneStats = getSceneCompositionStats(canvas)
+    const edgeDensity = getImageEdgeDensity(canvas)
     const hasStrongVegetation = sceneStats.greenRatio >= 0.12 || hasVegetationColor(canvas)
     const hasFaceLikeSkin = sceneStats.skinRatio > 0.12 && sceneStats.greenRatio < 0.18
     const isDocumentLike = sceneStats.neutralRatio > 0.4 && sceneStats.greenRatio < 0.08
+    const posterLike = isPrintedGraphicLikeImage(canvas)
+    const isPosterLike =
+      edgeDensity > 0.18 &&
+      sceneStats.saturatedRatio > 0.38 &&
+      sceneStats.greenRatio < 0.18 &&
+      !potatoHeuristic &&
+      !tomatoHeuristic &&
+      !rottenTomatoHeuristic
 
-    if (!hasPlant || !hasStrongVegetation || hasFaceLikeSkin || isDocumentLike) {
+    if (!hasPlant || !hasStrongVegetation || hasFaceLikeSkin || isDocumentLike || isPosterLike || posterLike) {
       return {
         accepted: false,
         reason: 'Only plant, crop, fruit, or vegetable images are supported. Personal and ID images are rejected.',
