@@ -246,6 +246,46 @@ const hasVegetationColor = (canvas) => {
   return vegetationPixels / Math.max(visiblePixels, 1) >= 0.08
 }
 
+const getImageColorStats = (canvas) => {
+  const context = canvas.getContext('2d', { willReadFrequently: true })
+  const { data } = context.getImageData(0, 0, canvas.width, canvas.height)
+  let redTotal = 0
+  let greenTotal = 0
+  let blueTotal = 0
+  let warmPixels = 0
+  let darkSpots = 0
+  let visiblePixels = 0
+
+  for (let index = 0; index < data.length; index += 16) {
+    const red = data[index]
+    const green = data[index + 1]
+    const blue = data[index + 2]
+    const brightness = red + green + blue
+
+    if (brightness < 45) continue
+    visiblePixels += 1
+    redTotal += red
+    greenTotal += green
+    blueTotal += blue
+
+    if (red > 120 && green < 170 && blue < 150) warmPixels += 1
+    if (red < 120 && green < 120 && blue < 115 && brightness > 40) darkSpots += 1
+  }
+
+  return {
+    redMean: redTotal / Math.max(visiblePixels, 1),
+    greenMean: greenTotal / Math.max(visiblePixels, 1),
+    blueMean: blueTotal / Math.max(visiblePixels, 1),
+    warmRatio: warmPixels / Math.max(visiblePixels, 1),
+    darkSpotRatio: darkSpots / Math.max(visiblePixels, 1),
+  }
+}
+
+const isTomatoLikeImage = (canvas) => {
+  const { redMean, greenMean, blueMean, warmRatio, darkSpotRatio } = getImageColorStats(canvas)
+  return redMean > greenMean && redMean > blueMean && warmRatio > 0.12 && darkSpotRatio > 0.02
+}
+
 const defaultDemoLeaf = (() => {
   return (
     'data:image/svg+xml;utf8,' +
@@ -737,6 +777,7 @@ function App() {
     if (confidentFace) return { accepted: false, reason: 'person detected · frame rejected' }
 
     const predictions = await plantModel.current.classify(canvas, 10)
+    const tomatoHeuristic = isTomatoLikeImage(canvas)
     const hasPlantLabel = predictions.some(({ className, probability }) => {
       const label = className.toLowerCase()
       return probability >= 0.12 && isLikelyPlantPrediction(label)
@@ -762,12 +803,16 @@ function App() {
 
     if (!hasPlant) return { accepted: false, reason: 'plant or crop not detected' }
 
+    if (tomatoHeuristic) {
+      return { accepted: true, plantName: 'Tomato' }
+    }
+
     const resolvedPrediction = plantPrediction || fallbackPrediction || predictions[0]
     const finalPlantName = formatPlantName(resolvedPrediction?.className || 'Plant / crop')
     return { accepted: true, plantName: finalPlantName }
   }
 
-  const estimatePlantHealth = (canvas) => {
+  const estimatePlantHealth = (canvas, diseases = []) => {
     const context = canvas.getContext('2d')
     const { data } = context.getImageData(0, 0, canvas.width, canvas.height)
     let greenPixels = 0
@@ -788,8 +833,14 @@ function App() {
 
     const greenRatio = greenPixels / Math.max(visiblePixels, 1)
     const stressRatio = stressPixels / Math.max(visiblePixels, 1)
-    const healthScore = Math.round(Math.min(98, Math.max(5, 50 + greenRatio * 100 - stressRatio * 55)))
-    const isHealthy = healthScore >= 55
+    let healthScore = Math.round(Math.min(98, Math.max(5, 50 + greenRatio * 100 - stressRatio * 55)))
+
+    const diseaseSeverity = diseases.reduce((sum, disease) => sum + (disease.severity || 0), 0)
+    if (diseaseSeverity > 0) {
+      healthScore = Math.max(5, healthScore - Math.min(55, diseaseSeverity * 0.55))
+    }
+
+    const isHealthy = healthScore >= 55 && diseaseSeverity <= 15
 
     return { isHealthy, confidence: healthScore }
   }
@@ -829,8 +880,8 @@ function App() {
         }
         setFeedImage(URL.createObjectURL(blob))
         setStampVisible(false)
-        const result = estimatePlantHealth(canvas)
         const diseases = analyzeDiseaseIndicators(canvas)
+        const result = estimatePlantHealth(canvas, diseases)
         setReadoutLeft('visual health screening complete')
         setReadoutRight('visual health score')
         setHintText('screening estimate only: confirm results with an agronomist or trained model')
@@ -883,8 +934,8 @@ function App() {
         }
       }
 
-      const result = estimatePlantHealth(canvas)
       const diseases = analyzeDiseaseIndicators(canvas)
+      const result = estimatePlantHealth(canvas, diseases)
       const imageRecord = await addGalleryImage(file, {
         source: 'device gallery',
         plantName: validation.plantName,
