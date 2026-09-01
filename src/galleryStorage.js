@@ -1,5 +1,5 @@
 import { createClient } from '@supabase/supabase-js'
-import { GALLERY_CONFIG, SUPABASE_TABLE } from './constants.js'
+import { GALLERY_CONFIG } from './constants.js'
 
 const { DATABASE_NAME, STORE_NAME, DATABASE_VERSION, BUCKET_NAME } = GALLERY_CONFIG
 
