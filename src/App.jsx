@@ -286,6 +286,11 @@ const isTomatoLikeImage = (canvas) => {
   return redMean > greenMean && redMean > blueMean && warmRatio > 0.12 && darkSpotRatio > 0.02
 }
 
+const isRottenTomatoImage = (canvas) => {
+  const { redMean, greenMean, blueMean, warmRatio, darkSpotRatio } = getImageColorStats(canvas)
+  return redMean > greenMean && redMean > blueMean && warmRatio > 0.15 && darkSpotRatio > 0.04
+}
+
 const defaultDemoLeaf = (() => {
   return (
     'data:image/svg+xml;utf8,' +
@@ -577,24 +582,24 @@ function App() {
     const nutrientRatio = nutrientPixels / Math.max(visiblePixels, 1)
 
     const diseases = []
-    if (fungalRatio > 0.05)
+    if (fungalRatio > 0.02 || isRottenTomatoImage(canvas))
       diseases.push({
         type: 'fungal',
-        severity: Math.min(100, Math.round(fungalRatio * 500)),
+        severity: Math.min(100, Math.round((fungalRatio + 0.03) * 700)),
         name: 'Fungal infection',
       })
-    if (bacterialRatio > 0.05)
+    if (bacterialRatio > 0.02 || isRottenTomatoImage(canvas))
       diseases.push({
         type: 'bacterial',
-        severity: Math.min(100, Math.round(bacterialRatio * 500)),
+        severity: Math.min(100, Math.round((bacterialRatio + 0.03) * 700)),
         name: 'Bacterial disease',
       })
-    if (pestRatio > 0.08)
-      diseases.push({ type: 'pest', severity: Math.min(100, Math.round(pestRatio * 300)), name: 'Pest damage' })
-    if (nutrientRatio > 0.1)
+    if (pestRatio > 0.05)
+      diseases.push({ type: 'pest', severity: Math.min(100, Math.round(pestRatio * 500)), name: 'Pest damage' })
+    if (nutrientRatio > 0.08)
       diseases.push({
         type: 'nutrient',
-        severity: Math.min(100, Math.round(nutrientRatio * 250)),
+        severity: Math.min(100, Math.round(nutrientRatio * 370)),
         name: 'Nutrient deficiency',
       })
 
@@ -778,6 +783,11 @@ function App() {
 
     const predictions = await plantModel.current.classify(canvas, 10)
     const tomatoHeuristic = isTomatoLikeImage(canvas)
+    const rottenTomatoHeuristic = isRottenTomatoImage(canvas)
+    const tomatoPrediction = predictions.some(({ className, probability }) => {
+      const label = className.toLowerCase()
+      return probability >= 0.12 && (label.includes('tomato') || label.includes('pepper')) && tomatoHeuristic
+    })
     const hasPlantLabel = predictions.some(({ className, probability }) => {
       const label = className.toLowerCase()
       return probability >= 0.12 && isLikelyPlantPrediction(label)
@@ -803,7 +813,7 @@ function App() {
 
     if (!hasPlant) return { accepted: false, reason: 'plant or crop not detected' }
 
-    if (tomatoHeuristic) {
+    if (tomatoHeuristic || tomatoPrediction || rottenTomatoHeuristic) {
       return { accepted: true, plantName: 'Tomato' }
     }
 
@@ -837,7 +847,11 @@ function App() {
 
     const diseaseSeverity = diseases.reduce((sum, disease) => sum + (disease.severity || 0), 0)
     if (diseaseSeverity > 0) {
-      healthScore = Math.max(5, healthScore - Math.min(55, diseaseSeverity * 0.55))
+      healthScore = Math.max(5, healthScore - Math.min(55, diseaseSeverity * 0.65))
+    }
+
+    if (isRottenTomatoImage(canvas) || diseaseSeverity > 30) {
+      healthScore = Math.min(healthScore, 35)
     }
 
     const isHealthy = healthScore >= 55 && diseaseSeverity <= 15
