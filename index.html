@@ -1,0 +1,59 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <link rel="icon" type="image/svg+xml" href="/crop-doctor-react/favicon.svg" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>crop-doctor-react</title>
+    <script>
+      window.GA_MEASUREMENT_ID = 'G-4VDRSTQN39';
+    </script>
+    <script>
+      const gaMeasurementId = window.GA_MEASUREMENT_ID || '';
+
+      if (gaMeasurementId) {
+        const gaScript = document.createElement('script');
+        gaScript.async = true;
+        gaScript.src = `https://www.googletagmanager.com/gtag/js?id=${gaMeasurementId}`;
+        document.head.appendChild(gaScript);
+
+        window.dataLayer = window.dataLayer || [];
+        function gtag(){ dataLayer.push(arguments); }
+        gtag('js', new Date());
+        gtag('config', gaMeasurementId, { send_page_view: true });
+      }
+    </script>
+    <script type="module" crossorigin src="/crop-doctor-react/assets/index-B07HlGhm.js"></script>
+    <link rel="stylesheet" crossorigin href="/crop-doctor-react/assets/index-BQCwjfS3.css">
+  </head>
+  <body>
+    <div id="root"></div>
+    <script>
+      // Inline Supabase configuration for GitHub Pages
+      window.SUPABASE_CONFIG = {
+        url: 'https://hrdqfmrgwouuxlcwmgmp.supabase.co',
+        key: 'sb_publishable_jYBmSGghWt0LBcYpjJde9w_vHzehQaU'
+      };
+      console.log('✅ Supabase config loaded inline:', {
+        url: window.SUPABASE_CONFIG.url,
+        keyLength: window.SUPABASE_CONFIG.key.length,
+        keyPrefix: window.SUPABASE_CONFIG.key.substring(0, 15) + '...'
+      });
+
+      fetch(`${window.SUPABASE_CONFIG.url}/rest/v1/scans?select=count`, {
+        headers: {
+          apikey: window.SUPABASE_CONFIG.key,
+          Authorization: `Bearer ${window.SUPABASE_CONFIG.key}`,
+          'Content-Type': 'application/json'
+        }
+      }).then((response) => {
+        console.log('🔍 Supabase API test:', response.status, response.ok ? '✅ Connected' : '❌ Failed');
+        if (!response.ok) {
+          response.text().then((text) => console.error('❌ Error details:', text));
+        }
+      }).catch((error) => {
+        console.error('❌ Supabase connection test failed:', error);
+      });
+    </script>
+  </body>
+</html>
