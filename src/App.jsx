@@ -828,14 +828,8 @@ function App() {
     setLastScan(`${image.confidence}%`)
     setRecommendations(getCropRecommendations(isHealthy, image.plantName || 'Plant / crop', diseases))
 
-    // Scroll to gallery and show hint
-    setTimeout(() => {
-      if (galleryBoxRef.current) {
-        galleryBoxRef.current.scrollIntoView({ behavior: 'smooth', block: 'start' })
-        setShowGalleryHint(true)
-        setTimeout(() => setShowGalleryHint(false), 3000)
-      }
-    }, 100)
+    setShowGalleryHint(true)
+    setTimeout(() => setShowGalleryHint(false), 2600)
   }
 
   const handleConnect = async () => {

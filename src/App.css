@@ -25,11 +25,9 @@ html {
 }
 body {
   margin: 0;
-  background:
-    radial-gradient(circle at top, rgba(93, 150, 91, 0.2), transparent 28%),
-    var(--deep-canopy);
+  background: radial-gradient(circle at top, rgba(93, 150, 91, 0.2), transparent 28%), var(--deep-canopy);
   color: var(--mist);
-  font-family: "Space Grotesk", sans-serif;
+  font-family: 'Space Grotesk', sans-serif;
   font-size: 16px;
   line-height: 1.5;
   overflow-x: hidden;
@@ -38,7 +36,7 @@ body {
 h1,
 h2,
 h3 {
-  font-family: "Fraunces", serif;
+  font-family: 'Fraunces', serif;
   font-weight: 500;
   margin: 0;
   letter-spacing: -0.01em;
@@ -71,11 +69,7 @@ a:focus-visible {
   z-index: 0;
   pointer-events: none;
   opacity: 0.08;
-  background-image: repeating-linear-gradient(
-    115deg,
-    var(--chlorophyll) 0px,
-    transparent 1.5px 90px
-  );
+  background-image: repeating-linear-gradient(115deg, var(--chlorophyll) 0px, transparent 1.5px 90px);
 }
 
 .wrap {
@@ -87,7 +81,7 @@ a:focus-visible {
 }
 
 .eyebrow {
-  font-family: "IBM Plex Mono", monospace;
+  font-family: 'IBM Plex Mono', monospace;
   font-size: 0.76rem;
   letter-spacing: 0.14em;
   text-transform: uppercase;
@@ -130,7 +124,7 @@ nav {
   align-items: center;
   gap: 12px;
   min-height: 44px;
-  font-family: "Fraunces", serif;
+  font-family: 'Fraunces', serif;
   font-size: 1.32rem;
   font-weight: 600;
   letter-spacing: 0.01em;
@@ -224,11 +218,7 @@ nav {
 }
 
 .hero-top .wrap {
-  background: linear-gradient(
-    180deg,
-    rgba(255, 255, 255, 0.02),
-    rgba(255, 255, 255, 0)
-  );
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.02), rgba(255, 255, 255, 0));
   border: 1px solid rgba(239, 238, 225, 0.08);
   border-radius: 26px;
   padding: 32px 22px 18px;
@@ -269,7 +259,7 @@ nav {
   border-radius: 999px;
   border: 1px solid rgba(159, 214, 117, 0.3);
   background: rgba(159, 214, 117, 0.07);
-  font-family: "IBM Plex Mono", monospace;
+  font-family: 'IBM Plex Mono', monospace;
   font-size: 0.76rem;
   letter-spacing: 0.03em;
   color: var(--chlorophyll);
@@ -309,7 +299,7 @@ nav {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  font-family: "IBM Plex Mono", monospace;
+  font-family: 'IBM Plex Mono', monospace;
   font-size: 0.72rem;
   letter-spacing: 0.08em;
   text-transform: uppercase;
@@ -382,12 +372,7 @@ nav {
   right: 0;
   top: 0;
   height: 3px;
-  background: linear-gradient(
-    90deg,
-    transparent,
-    var(--chlorophyll),
-    transparent
-  );
+  background: linear-gradient(90deg, transparent, var(--chlorophyll), transparent);
   box-shadow: 0 0 18px 4px rgba(159, 214, 117, 0.7);
   opacity: 0;
   pointer-events: none;
@@ -411,7 +396,7 @@ nav {
   position: absolute;
   top: 16px;
   right: 16px;
-  font-family: "IBM Plex Mono", monospace;
+  font-family: 'IBM Plex Mono', monospace;
   font-weight: 600;
   font-size: 0.85rem;
   letter-spacing: 0.08em;
@@ -452,7 +437,7 @@ nav {
   justify-content: space-between;
   align-items: center;
   margin-top: 14px;
-  font-family: "IBM Plex Mono", monospace;
+  font-family: 'IBM Plex Mono', monospace;
   font-size: 0.8rem;
   color: var(--soil);
   min-height: 18px;
@@ -469,7 +454,7 @@ nav {
   padding: 12px 14px;
   border-radius: 10px;
   border: 1.5px solid rgba(91, 60, 40, 0.25);
-  font-family: "IBM Plex Mono", monospace;
+  font-family: 'IBM Plex Mono', monospace;
   font-size: 0.85rem;
   background: #fff;
   color: var(--ink);
@@ -483,7 +468,7 @@ nav {
 .btn {
   border: none;
   cursor: pointer;
-  font-family: "Space Grotesk", sans-serif;
+  font-family: 'Space Grotesk', sans-serif;
   font-weight: 600;
   border-radius: 10px;
   padding: 12px 20px;
@@ -553,7 +538,7 @@ nav {
   border-radius: 8px;
   background: rgba(193, 87, 46, 0.1);
   color: #8b3f2c;
-  font-family: "IBM Plex Mono", monospace;
+  font-family: 'IBM Plex Mono', monospace;
   font-size: 0.7rem;
 }
 
@@ -568,11 +553,7 @@ nav {
   width: 76px;
   height: 76px;
   border-radius: 50%;
-  background: radial-gradient(
-    circle at 35% 30%,
-    var(--fern-light),
-    var(--fern) 70%
-  );
+  background: radial-gradient(circle at 35% 30%, var(--fern-light), var(--fern) 70%);
   border: 4px solid var(--mist);
   box-shadow:
     0 0 0 2px var(--soil),
@@ -612,15 +593,11 @@ nav {
   font-size: 0.72rem;
   color: var(--soil);
   margin-top: 10px;
-  font-family: "IBM Plex Mono", monospace;
+  font-family: 'IBM Plex Mono', monospace;
 }
 
 .status-card {
-  background: linear-gradient(
-    180deg,
-    rgba(35, 60, 46, 0.9),
-    rgba(22, 42, 31, 0.92)
-  );
+  background: linear-gradient(180deg, rgba(35, 60, 46, 0.9), rgba(22, 42, 31, 0.92));
   border-radius: 16px;
   padding: 20px 22px;
   border: 1px solid rgba(239, 238, 225, 0.08);
@@ -629,7 +606,7 @@ nav {
 
 .status-card h3 {
   font-size: 0.78rem;
-  font-family: "IBM Plex Mono", monospace;
+  font-family: 'IBM Plex Mono', monospace;
   letter-spacing: 0.12em;
   color: var(--mist-dim);
   text-transform: uppercase;
@@ -653,7 +630,7 @@ nav {
   display: flex;
   align-items: center;
   gap: 7px;
-  font-family: "IBM Plex Mono", monospace;
+  font-family: 'IBM Plex Mono', monospace;
   font-size: 0.76rem;
 }
 
@@ -691,7 +668,7 @@ nav {
 }
 
 .tile-label {
-  font-family: "IBM Plex Mono", monospace;
+  font-family: 'IBM Plex Mono', monospace;
   font-size: 0.66rem;
   letter-spacing: 0.08em;
   color: var(--mist-dim);
@@ -700,7 +677,7 @@ nav {
 }
 
 .tile-value {
-  font-family: "Fraunces", serif;
+  font-family: 'Fraunces', serif;
   font-size: 1.35rem;
   color: var(--chlorophyll);
 }
@@ -732,11 +709,7 @@ nav {
 }
 
 .how-card {
-  background: linear-gradient(
-    180deg,
-    rgba(26, 49, 36, 0.9),
-    rgba(19, 35, 28, 0.92)
-  );
+  background: linear-gradient(180deg, rgba(26, 49, 36, 0.9), rgba(19, 35, 28, 0.92));
   border: 1px solid rgba(239, 238, 225, 0.08);
   border-radius: 16px;
   padding: 26px 22px;
@@ -753,7 +726,7 @@ nav {
 }
 
 .how-num {
-  font-family: "IBM Plex Mono", monospace;
+  font-family: 'IBM Plex Mono', monospace;
   font-size: 0.85rem;
   color: var(--chlorophyll);
   margin-bottom: 14px;
@@ -840,7 +813,7 @@ nav {
   place-items: center;
   font-weight: 700;
   margin: 0 auto 18px;
-  font-family: "Space Grotesk", sans-serif;
+  font-family: 'Space Grotesk', sans-serif;
   overflow: hidden;
 }
 
@@ -862,7 +835,7 @@ nav {
 }
 
 .team-role {
-  font-family: "IBM Plex Mono", monospace;
+  font-family: 'IBM Plex Mono', monospace;
   font-size: 0.72rem;
   letter-spacing: 0.06em;
   text-transform: uppercase;
@@ -906,7 +879,7 @@ nav {
 }
 
 .log-head {
-  font-family: "IBM Plex Mono", monospace;
+  font-family: 'IBM Plex Mono', monospace;
   font-size: 0.72rem;
   letter-spacing: 0.08em;
   text-transform: uppercase;
@@ -1014,7 +987,7 @@ nav {
   transition: all 0.2s ease;
   border: 2px solid rgba(239, 238, 225, 0.1);
   font-size: 0.5rem;
-  font-family: "IBM Plex Mono", monospace;
+  font-family: 'IBM Plex Mono', monospace;
   font-weight: 600;
   position: relative;
 }
@@ -1100,6 +1073,7 @@ nav {
   border: 1px solid rgba(239, 238, 225, 0.08);
   border-radius: 16px;
   padding: 16px 18px;
+  scroll-margin-top: 24px;
 }
 
 .gallery-hint {
@@ -1142,21 +1116,33 @@ nav {
   border-radius: 10px;
   background: rgba(255, 255, 255, 0.03);
   cursor: pointer;
+  transition:
+    border-color 0.2s ease,
+    box-shadow 0.2s ease,
+    transform 0.2s ease;
+  will-change: transform;
 }
 .gallery-item:hover,
 .gallery-item:focus-visible {
   border-color: rgba(168, 224, 138, 0.55);
   outline: none;
+  transform: translateY(-1px);
 }
 .gallery-item.selected {
   border-color: var(--chlorophyll);
   box-shadow: 0 0 0 2px rgba(168, 224, 138, 0.2);
+  transform: none;
 }
 .gallery-item img {
   width: 100%;
   aspect-ratio: 1;
   object-fit: cover;
   display: block;
+  transition: transform 0.2s ease;
+}
+.gallery-item:hover img,
+.gallery-item:focus-visible img {
+  transform: scale(1.02);
 }
 .gallery-meta {
   display: flex;
@@ -1181,7 +1167,7 @@ nav {
 .gallery-confidence {
   margin-top: 3px;
   color: var(--mist-dim);
-  font-family: "IBM Plex Mono", monospace;
+  font-family: 'IBM Plex Mono', monospace;
   font-size: 0.58rem;
 }
 .delete-image {
@@ -1209,7 +1195,7 @@ nav {
   display: inline-flex;
   padding: 4px 8px;
   border-radius: 999px;
-  font-family: "IBM Plex Mono", monospace;
+  font-family: 'IBM Plex Mono', monospace;
   font-size: 0.66rem;
   letter-spacing: 0.06em;
   text-transform: uppercase;
@@ -1274,11 +1260,7 @@ footer {
   width: 64px;
   height: 64px;
   border-radius: 50%;
-  background: radial-gradient(
-    circle at 35% 30%,
-    var(--fern-light),
-    var(--fern) 70%
-  );
+  background: radial-gradient(circle at 35% 30%, var(--fern-light), var(--fern) 70%);
   border: 3px solid var(--mist);
   box-shadow:
     0 8px 24px -6px rgba(0, 0, 0, 0.7),
