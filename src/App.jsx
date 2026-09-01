@@ -246,6 +246,50 @@ const hasVegetationColor = (canvas) => {
   return vegetationPixels / Math.max(visiblePixels, 1) >= 0.08
 }
 
+const getSceneCompositionStats = (canvas) => {
+  const context = canvas.getContext('2d', { willReadFrequently: true })
+  const { data } = context.getImageData(0, 0, canvas.width, canvas.height)
+  let visiblePixels = 0
+  let greenPixels = 0
+  let skinPixels = 0
+  let neutralPixels = 0
+
+  for (let index = 0; index < data.length; index += 20) {
+    const red = data[index]
+    const green = data[index + 1]
+    const blue = data[index + 2]
+    const brightness = red + green + blue
+
+    if (brightness < 35) continue
+    visiblePixels += 1
+
+    if (green > red * 1.08 && green > blue * 1.08 && green > 40) {
+      greenPixels += 1
+    }
+
+    const isSkinTone =
+      red > 95 &&
+      red < 220 &&
+      green > 35 &&
+      green < 170 &&
+      blue > 20 &&
+      blue < 145 &&
+      (Math.abs(red - green) > 12 || Math.abs(red - blue) > 18)
+
+    if (isSkinTone) skinPixels += 1
+
+    if (brightness > 180 && Math.abs(red - green) < 18 && Math.abs(green - blue) < 18) {
+      neutralPixels += 1
+    }
+  }
+
+  return {
+    greenRatio: greenPixels / Math.max(visiblePixels, 1),
+    skinRatio: skinPixels / Math.max(visiblePixels, 1),
+    neutralRatio: neutralPixels / Math.max(visiblePixels, 1),
+  }
+}
+
 const getImageColorStats = (canvas) => {
   const context = canvas.getContext('2d', { willReadFrequently: true })
   const { data } = context.getImageData(0, 0, canvas.width, canvas.height)
@@ -1003,7 +1047,12 @@ function App() {
       })
       .sort((first, second) => second.probability - first.probability)[0]
 
-    if (!hasPlant) {
+    const sceneStats = getSceneCompositionStats(canvas)
+    const hasStrongVegetation = sceneStats.greenRatio >= 0.12 || hasVegetationColor(canvas)
+    const hasFaceLikeSkin = sceneStats.skinRatio > 0.12 && sceneStats.greenRatio < 0.18
+    const isDocumentLike = sceneStats.neutralRatio > 0.4 && sceneStats.greenRatio < 0.08
+
+    if (!hasPlant || !hasStrongVegetation || hasFaceLikeSkin || isDocumentLike) {
       return {
         accepted: false,
         reason: 'Only plant, crop, fruit, or vegetable images are supported. Personal and ID images are rejected.',
