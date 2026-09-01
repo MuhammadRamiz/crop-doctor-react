@@ -1071,9 +1071,15 @@ nav {
   gap: 12px;
 }
 
-.log-head span {
-  color: var(--chlorophyll);
+.gallery-header-actions {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
   margin-left: auto;
+}
+
+.gallery-header-actions span {
+  color: var(--chlorophyll);
 }
 
 .delete-all-btn {
@@ -1087,12 +1093,95 @@ nav {
   font-size: 0.64rem;
   letter-spacing: 0.08em;
   text-transform: uppercase;
-  transition: background 0.2s ease, transform 0.2s ease;
+  transition:
+    background 0.2s ease,
+    transform 0.2s ease;
 }
 
 .delete-all-btn:hover {
   background: rgba(193, 87, 46, 0.16);
   transform: translateY(-1px);
+}
+
+.confirmation-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 1200;
+  display: grid;
+  place-items: center;
+  background: rgba(8, 15, 12, 0.68);
+  backdrop-filter: blur(8px);
+  padding: 20px;
+}
+
+.confirmation-modal {
+  width: min(100%, 420px);
+  background: rgba(24, 39, 31, 0.96);
+  border: 1px solid rgba(239, 238, 225, 0.12);
+  border-radius: 18px;
+  box-shadow: 0 24px 80px rgba(0, 0, 0, 0.42);
+  padding: 24px 20px 18px;
+  text-align: center;
+}
+
+.confirmation-icon {
+  width: 48px;
+  height: 48px;
+  margin: 0 auto 14px;
+  display: grid;
+  place-items: center;
+  border-radius: 50%;
+  background: rgba(193, 87, 46, 0.14);
+  color: #f39d79;
+  font-size: 1.6rem;
+  font-weight: 700;
+}
+
+.confirmation-modal h3 {
+  margin: 0 0 10px;
+  color: var(--mist);
+  font-size: 1.25rem;
+}
+
+.confirmation-modal p {
+  margin: 0;
+  color: var(--mist-dim);
+  line-height: 1.6;
+  font-size: 0.94rem;
+}
+
+.confirmation-actions {
+  display: flex;
+  justify-content: center;
+  gap: 12px;
+  margin-top: 22px;
+}
+
+.confirmation-btn {
+  border: 1px solid transparent;
+  border-radius: 999px;
+  padding: 10px 18px;
+  cursor: pointer;
+  font-weight: 600;
+  transition:
+    transform 0.2s ease,
+    opacity 0.2s ease;
+}
+
+.confirmation-btn:hover {
+  transform: translateY(-1px);
+}
+
+.confirmation-btn.secondary {
+  border-color: rgba(239, 238, 225, 0.18);
+  background: rgba(255, 255, 255, 0.02);
+  color: var(--mist);
+}
+
+.confirmation-btn.primary {
+  background: linear-gradient(135deg, #d7794a, #b65d39);
+  color: white;
+  box-shadow: 0 10px 22px rgba(182, 93, 57, 0.28);
 }
 
 .gallery-box {

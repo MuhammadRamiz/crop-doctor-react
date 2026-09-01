@@ -468,6 +468,7 @@ function App() {
   const [shutterDisabled, setShutterDisabled] = useState(true)
   const [activeNavSection, setActiveNavSection] = useState('overview')
   const [showGalleryHint, setShowGalleryHint] = useState(false)
+  const [showDeleteAllConfirm, setShowDeleteAllConfirm] = useState(false)
   const videoRef = useRef(null)
   const fileInputRef = useRef(null)
   const galleryBoxRef = useRef(null)
@@ -686,9 +687,6 @@ function App() {
   const deleteAllGalleryImages = async () => {
     if (gallery.length === 0) return
 
-    const confirmed = window.confirm('Delete all saved gallery images from the database and local storage?')
-    if (!confirmed) return
-
     try {
       const deletedCount = await clearGalleryImages()
       galleryObjectUrls.current.forEach((url) => URL.revokeObjectURL(url))
@@ -698,9 +696,11 @@ function App() {
       setRecommendations([])
       setLogs([])
       setUploadError(`${deletedCount} image${deletedCount === 1 ? '' : 's'} deleted`)
+      setShowDeleteAllConfirm(false)
     } catch (error) {
       console.error('❌ Failed to clear gallery:', error)
       setUploadError('Unable to delete all gallery images. Check storage permissions.')
+      setShowDeleteAllConfirm(false)
     }
   }
 
@@ -1352,6 +1352,39 @@ function App() {
     <>
       <div className="veins" />
 
+      {showDeleteAllConfirm && (
+        <div className="confirmation-overlay" role="presentation" onClick={() => setShowDeleteAllConfirm(false)}>
+          <div
+            className="confirmation-modal"
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="delete-all-title"
+            onClick={(event) => event.stopPropagation()}
+          >
+            <div className="confirmation-icon" aria-hidden="true">
+              !
+            </div>
+            <h3 id="delete-all-title">Delete all gallery images?</h3>
+            <p>
+              This will remove every saved image from the gallery and clear the connected database records. You can
+              upload new ones afterward.
+            </p>
+            <div className="confirmation-actions">
+              <button
+                type="button"
+                className="confirmation-btn secondary"
+                onClick={() => setShowDeleteAllConfirm(false)}
+              >
+                Cancel
+              </button>
+              <button type="button" className="confirmation-btn primary" onClick={deleteAllGalleryImages}>
+                Delete all
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
       <button
         type="button"
         className="mobile-fab"
@@ -1683,17 +1716,20 @@ function App() {
 
               <div className="gallery-box" ref={galleryBoxRef}>
                 <div className="log-head">
-                  Plant gallery <span>{gallery.length} saved</span>
-                  {gallery.length > 0 && (
-                    <button
-                      type="button"
-                      className="delete-all-btn"
-                      onClick={deleteAllGalleryImages}
-                      aria-label="Delete all saved gallery images"
-                    >
-                      Delete all
-                    </button>
-                  )}
+                  Plant gallery
+                  <div className="gallery-header-actions">
+                    <span>{gallery.length} saved</span>
+                    {gallery.length > 0 && (
+                      <button
+                        type="button"
+                        className="delete-all-btn"
+                        onClick={() => setShowDeleteAllConfirm(true)}
+                        aria-label="Delete all saved gallery images"
+                      >
+                        Delete all
+                      </button>
+                    )}
+                  </div>
                 </div>
                 {showGalleryHint && (
                   <div className="gallery-hint" aria-live="polite" role="status">
