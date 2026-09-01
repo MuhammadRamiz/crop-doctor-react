@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react'
-import { getGalleryImages, removeGalleryImage, saveGalleryImage } from './galleryStorage'
+import { clearGalleryImages, getGalleryImages, removeGalleryImage, saveGalleryImage } from './galleryStorage'
 import { trackEvent } from './analytics.js'
 import danishPortrait from './assets/danish.jpeg'
 import ramizPortrait from './assets/ramiz.jpeg'
@@ -681,6 +681,27 @@ function App() {
         time: new Date(item.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
       }))
     )
+  }
+
+  const deleteAllGalleryImages = async () => {
+    if (gallery.length === 0) return
+
+    const confirmed = window.confirm('Delete all saved gallery images from the database and local storage?')
+    if (!confirmed) return
+
+    try {
+      const deletedCount = await clearGalleryImages()
+      galleryObjectUrls.current.forEach((url) => URL.revokeObjectURL(url))
+      galleryObjectUrls.current = []
+      setGallery([])
+      setSelectedGalleryImageId(null)
+      setRecommendations([])
+      setLogs([])
+      setUploadError(`${deletedCount} image${deletedCount === 1 ? '' : 's'} deleted`)
+    } catch (error) {
+      console.error('❌ Failed to clear gallery:', error)
+      setUploadError('Unable to delete all gallery images. Check storage permissions.')
+    }
   }
 
   const analyzeDiseaseIndicators = (canvas) => {
@@ -1663,6 +1684,16 @@ function App() {
               <div className="gallery-box" ref={galleryBoxRef}>
                 <div className="log-head">
                   Plant gallery <span>{gallery.length} saved</span>
+                  {gallery.length > 0 && (
+                    <button
+                      type="button"
+                      className="delete-all-btn"
+                      onClick={deleteAllGalleryImages}
+                      aria-label="Delete all saved gallery images"
+                    >
+                      Delete all
+                    </button>
+                  )}
                 </div>
                 {showGalleryHint && (
                   <div className="gallery-hint" aria-live="polite" role="status">

@@ -1064,10 +1064,37 @@ nav {
   color: #f39d79;
 }
 
-.log-head span {
-  float: right;
-  color: var(--chlorophyll);
+.log-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
 }
+
+.log-head span {
+  color: var(--chlorophyll);
+  margin-left: auto;
+}
+
+.delete-all-btn {
+  border: 1px solid rgba(193, 87, 46, 0.4);
+  background: rgba(193, 87, 46, 0.08);
+  color: #f39d79;
+  border-radius: 999px;
+  padding: 6px 10px;
+  cursor: pointer;
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 0.64rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  transition: background 0.2s ease, transform 0.2s ease;
+}
+
+.delete-all-btn:hover {
+  background: rgba(193, 87, 46, 0.16);
+  transform: translateY(-1px);
+}
+
 .gallery-box {
   background: var(--canopy-mid);
   border: 1px solid rgba(239, 238, 225, 0.08);

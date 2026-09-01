@@ -290,6 +290,28 @@ export const saveGalleryImage = async (blob, metadata) => {
   }
 
   try {
+    const { data: duplicateScan, error: duplicateError } = await supabase
+      .from("scans")
+      .select("id, image_hash, created_at")
+      .eq("image_hash", metadata.imageHash)
+      .maybeSingle();
+
+    if (duplicateError) {
+      throw duplicateError;
+    }
+
+    if (duplicateScan) {
+      console.log("⚠️ Duplicate image detected before upload", {
+        imageHash: metadata.imageHash,
+        id: duplicateScan.id,
+      });
+      return {
+        duplicate: true,
+        id: duplicateScan.id,
+        imageHash: duplicateScan.image_hash,
+        createdAt: new Date(duplicateScan.created_at).getTime(),
+      };
+    }
     console.log("📤 Attempting to save image to Supabase...", {
       imageHash: metadata.imageHash,
       plantName: metadata.plantName,
@@ -442,6 +464,76 @@ export const removeGalleryImage = async (id) => {
     console.error("❌ Supabase delete failed:", error);
     throw new Error(
       "Supabase delete failed. Please verify the scans row and bucket permissions.",
+    );
+  }
+};
+
+export const clearGalleryImages = async () => {
+  if (!supabase) {
+    console.log("🧹 Clearing local IndexedDB gallery");
+    const database = await openDatabase();
+    const transaction = database.transaction(STORE_NAME, "readwrite");
+    const allImages = await requestAsPromise(
+      transaction.objectStore(STORE_NAME).getAll(),
+    );
+
+    await Promise.all(
+      allImages.map((image) =>
+        requestAsPromise(
+          transaction.objectStore(STORE_NAME).delete(image.id),
+        ),
+      ),
+    );
+
+    database.close();
+    return allImages.length;
+  }
+
+  try {
+    console.log("🧹 Clearing all images from Supabase gallery");
+    const { data: rows, error: fetchError } = await supabase
+      .from("scans")
+      .select("id, storage_path, image_hash")
+      .order("created_at", { ascending: false });
+
+    if (fetchError) {
+      throw fetchError;
+    }
+
+    const storageCandidates = [
+      ...new Set(
+        rows
+          .flatMap((row) => [row.storage_path, row.image_hash ? `${row.image_hash}.jpg` : null])
+          .filter(Boolean),
+      ),
+    ];
+
+    if (storageCandidates.length > 0) {
+      const { error: storageError } = await supabase.storage
+        .from(BUCKET_NAME)
+        .remove(storageCandidates);
+      if (storageError) {
+        console.warn("⚠️ Error removing gallery storage files:", storageError);
+      }
+    }
+
+    if (rows.length > 0) {
+      const ids = rows.map((row) => row.id);
+      const { error: deleteError } = await supabase
+        .from("scans")
+        .delete()
+        .in("id", ids);
+      if (deleteError) {
+        throw deleteError;
+      }
+    }
+
+    console.log("✅ Gallery cleared successfully", { count: rows.length });
+    return rows.length;
+  } catch (error) {
+    console.error("❌ Failed to clear gallery:", error);
+    throw new Error(
+      "Could not delete all gallery images. Please verify the scans table and storage permissions.",
     );
   }
 };
