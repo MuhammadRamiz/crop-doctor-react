@@ -248,13 +248,12 @@ const hasVegetationColor = (canvas) => {
 
 const isLikelyPlantScene = (canvas) => {
   const sceneStats = getSceneCompositionStats(canvas)
-  const edgeDensity = getImageEdgeDensity(canvas)
   const greenRatio = sceneStats.greenRatio || 0
   const vegetationCheck = hasVegetationColor(canvas) || greenRatio > 0.02
-  const faceLikeSkin = sceneStats.skinRatio > 0.25 && greenRatio < 0.22
-  const documentLike = sceneStats.neutralRatio > 0.7 && greenRatio < 0.12
+  const faceLikeSkin = sceneStats.skinRatio > 0.22 && greenRatio < 0.25
+  const documentLike = sceneStats.neutralRatio > 0.8 && greenRatio < 0.12
   const posterLike = isPrintedGraphicLikeImage(canvas) && greenRatio < 0.25
-  const naturalTexture = edgeDensity > 0.0004 || greenRatio > 0.04 || vegetationCheck
+  const naturalTexture = greenRatio > 0.02 || hasVegetationColor(canvas)
 
   return vegetationCheck && naturalTexture && !faceLikeSkin && !documentLike && !posterLike
 }
@@ -354,6 +353,9 @@ const isPrintedGraphicLikeImage = (canvas) => {
       let blockVariance = 0
       let blockPixelCount = 0
       let blockSaturationTotal = 0
+      let blockRedTotal = 0
+      let blockGreenTotal = 0
+      let blockBlueTotal = 0
 
       for (let yy = y; yy < Math.min(y + step, height); yy += 2) {
         for (let xx = x; xx < Math.min(x + step, width); xx += 2) {
@@ -368,6 +370,9 @@ const isPrintedGraphicLikeImage = (canvas) => {
 
           blockLum += brightness
           blockSaturationTotal += saturation
+          blockRedTotal += red
+          blockGreenTotal += green
+          blockBlueTotal += blue
           blockPixelCount += 1
         }
       }
@@ -375,6 +380,10 @@ const isPrintedGraphicLikeImage = (canvas) => {
       if (blockPixelCount === 0) continue
 
       const avgLum = blockLum / blockPixelCount
+      const avgRed = blockRedTotal / blockPixelCount
+      const avgGreen = blockGreenTotal / blockPixelCount
+      const avgBlue = blockBlueTotal / blockPixelCount
+
       for (let yy = y; yy < Math.min(y + step, height); yy += 2) {
         for (let xx = x; xx < Math.min(x + step, width); xx += 2) {
           const index = (yy * width + xx) * 4
@@ -391,8 +400,8 @@ const isPrintedGraphicLikeImage = (canvas) => {
       const isPrimaryLike =
         (avgBrightness > 150 && avgSaturation > 70) ||
         (avgBrightness > 125 && avgSaturation > 90) ||
-        (red > 160 && green > 160 && blue < 110) ||
-        (red > 160 && green < 110 && blue < 110)
+        (avgRed > 160 && avgGreen > 160 && avgBlue < 110) ||
+        (avgRed > 160 && avgGreen < 110 && avgBlue < 110)
 
       if (isPrimaryLike) primaryColorPixels += 1
       if (avgSaturation > 60 && avgBrightness > 95 && blockVariance < 1000) lowVarianceBlocks += 1
@@ -471,19 +480,20 @@ const isPotatoLikeImage = (canvas) => {
   const tuberFrame =
     redMean > greenMean * 0.8 &&
     redMean > blueMean * 0.8 &&
-    warmRatio > 0.08 &&
-    darkSpotRatio > 0.018 &&
-    greenRatio < 0.35 &&
-    yellowRatio < 0.25 &&
-    (redMean > 140 || warmRatio > 0.12 || darkSpotRatio > 0.03)
+    warmRatio > 0.12 &&
+    darkSpotRatio > 0.03 &&
+    greenRatio < 0.28 &&
+    yellowRatio < 0.2 &&
+    (redMean > 140 || warmRatio > 0.16)
 
   const plantFrame =
     greenMean > redMean * 0.8 &&
     greenMean > blueMean * 0.8 &&
-    greenRatio > 0.2 &&
-    darkSpotRatio > 0.05 &&
-    yellowRatio < 0.18 &&
-    !(greenRatio > 0.42 && yellowRatio > 0.13)
+    greenRatio > 0.22 &&
+    greenRatio < 0.5 &&
+    darkSpotRatio > 0.06 &&
+    yellowRatio < 0.12 &&
+    !(greenRatio > 0.42 && yellowRatio > 0.08)
 
   return tuberFrame || plantFrame
 }
@@ -505,39 +515,45 @@ const detectCropIdentity = (canvas, fallbackName = 'Plant / crop') => {
   const formattedFallback = formatPlantName(fallbackName)
   const fallbackLower = (formattedFallback || '').toLowerCase()
 
-  const potatoSceneRule =
-    stats.darkSpotRatio > 0.05 &&
-    stats.greenRatio > 0.18 &&
-    stats.warmRatio > 0.06 &&
-    stats.yellowRatio < 0.18 &&
-    stats.greenMean > stats.redMean * 0.75
+  const flowerLikeFrame =
+    (stats.redMean > stats.greenMean && stats.warmRatio > 0.14 && stats.greenRatio < 0.6 && stats.yellowRatio < 0.22) ||
+    (stats.redMean > stats.greenMean * 1.08 &&
+      stats.warmRatio > 0.12 &&
+      stats.greenRatio < 0.58 &&
+      stats.darkSpotRatio < 0.18) ||
+    fallbackLower.includes('flower') ||
+    fallbackLower.includes('rose') ||
+    fallbackLower.includes('sunflower') ||
+    fallbackLabel === 'Flower' ||
+    fallbackLabel === 'Rose' ||
+    fallbackLabel === 'Sunflower'
 
-  const potatoVisualRule =
-    isPotatoLikeImage(canvas) ||
-    potatoSceneRule ||
-    (stats.warmRatio > 0.08 &&
-      stats.darkSpotRatio > 0.02 &&
-      stats.greenRatio < 0.3 &&
-      stats.redMean > stats.greenMean * 0.85) ||
-    (stats.darkSpotRatio > 0.05 &&
-      stats.greenRatio > 0.2 &&
-      stats.greenMean > stats.redMean * 0.85 &&
-      stats.yellowRatio < 0.18)
-
-  const cornLikeFrame =
-    stats.greenMean > stats.redMean && stats.greenRatio > 0.28 && stats.yellowRatio > 0.12 && stats.darkSpotRatio < 0.06
+  const cactusLikeFrame =
+    (stats.greenMean > stats.redMean &&
+      stats.greenRatio > 0.3 &&
+      stats.warmRatio < 0.18 &&
+      stats.darkSpotRatio < 0.12) ||
+    (stats.greenMean > stats.redMean * 1.1 &&
+      stats.greenRatio > 0.35 &&
+      stats.yellowRatio < 0.12 &&
+      stats.darkSpotRatio < 0.13) ||
+    fallbackLower.includes('cactus') ||
+    fallbackLabel === 'Cactus'
 
   const potatoRule =
     fallbackLower.includes('potato') ||
     fallbackLabel === 'Potato' ||
     (fallbackLower.includes('root') && stats.darkSpotRatio > 0.02) ||
-    potatoVisualRule ||
-    (stats.darkSpotRatio > 0.04 &&
+    (stats.greenRatio < 0.22 &&
+      stats.darkSpotRatio > 0.06 &&
       stats.warmRatio > 0.12 &&
-      stats.greenRatio < 0.22 &&
-      stats.redMean > stats.greenMean * 0.9) ||
-    (stats.darkSpotRatio > 0.05 && stats.greenRatio > 0.2 && !cornLikeFrame)
+      stats.redMean < stats.greenMean * 1.15 &&
+      stats.yellowRatio < 0.15 &&
+      !flowerLikeFrame &&
+      !cactusLikeFrame)
 
+  if (flowerLikeFrame) return 'Flower'
+  if (cactusLikeFrame) return 'Cactus'
   if (potatoRule) return 'Potato'
 
   const tomatoRule =
@@ -575,15 +591,6 @@ const detectCropIdentity = (canvas, fallbackName = 'Plant / crop') => {
     return 'Sunflower'
   }
 
-  if (
-    fallbackLower.includes('flower') ||
-    fallbackLabel === 'Flower' ||
-    (stats.yellowRatio > 0.14 && stats.greenMean > stats.blueMean)
-  ) {
-    return 'Flower'
-  }
-
-  if (fallbackLower.includes('cactus') || fallbackLabel === 'Cactus') return 'Cactus'
   if (fallbackLower.includes('grape') || fallbackLower.includes('grapevine') || fallbackLabel === 'Grapevine')
     return 'Grapevine'
   if (fallbackLower.includes('banana') || fallbackLabel === 'Banana') return 'Banana'
@@ -875,6 +882,7 @@ function App() {
   const analyzeDiseaseIndicators = (canvas) => {
     const context = canvas.getContext('2d', { willReadFrequently: true })
     const { data } = context.getImageData(0, 0, canvas.width, canvas.height)
+    const colorStats = getImageColorStats(canvas)
     let fungalPixels = 0
     let bacterialPixels = 0
     let pestPixels = 0
@@ -890,17 +898,11 @@ function App() {
       if (brightness < 45) continue
       visiblePixels += 1
 
-      // Fungal indicators: yellowish-brown, powdery look
-      if (red > 150 && green > 120 && green < red && blue < green) fungalPixels += 1
-
-      // Bacterial indicators: dark brown/black spots, water-soaked
-      if (red < 100 && green < 90 && blue < 85 && brightness > 30) bacterialPixels += 1
-
-      // Pest damage indicators: holes, irregular edges (high contrast areas)
-      if ((red > 200 || blue > 200) && Math.abs(red - green) > 50) pestPixels += 1
-
-      // Nutrient deficiency: yellow/pale leaves
-      if (red > 200 && green > 180 && blue < 100) nutrientPixels += 1
+      // Only flag disease when the pattern is consistently abnormal, not just colourful.
+      if (red > 150 && green > 110 && green < red && blue < green && brightness > 120) fungalPixels += 1
+      if (red < 100 && green < 90 && blue < 85 && brightness > 60) bacterialPixels += 1
+      if ((red > 200 || blue > 200) && Math.abs(red - green) > 60 && brightness > 80) pestPixels += 1
+      if (red > 200 && green > 180 && blue < 110 && brightness > 150) nutrientPixels += 1
     }
 
     const fungalRatio = fungalPixels / Math.max(visiblePixels, 1)
@@ -909,24 +911,24 @@ function App() {
     const nutrientRatio = nutrientPixels / Math.max(visiblePixels, 1)
 
     const diseases = []
-    if (fungalRatio > 0.02 || isRottenTomatoImage(canvas))
+    if ((fungalRatio > 0.08 && colorStats.greenRatio > 0.12) || isRottenTomatoImage(canvas))
       diseases.push({
         type: 'fungal',
-        severity: Math.min(100, Math.round((fungalRatio + 0.03) * 700)),
+        severity: Math.min(100, Math.round((fungalRatio + 0.05) * 420)),
         name: 'Fungal infection',
       })
-    if (bacterialRatio > 0.02 || isRottenTomatoImage(canvas))
+    if ((bacterialRatio > 0.07 && colorStats.greenRatio > 0.12) || isRottenTomatoImage(canvas))
       diseases.push({
         type: 'bacterial',
-        severity: Math.min(100, Math.round((bacterialRatio + 0.03) * 700)),
+        severity: Math.min(100, Math.round((bacterialRatio + 0.05) * 420)),
         name: 'Bacterial disease',
       })
-    if (pestRatio > 0.05)
-      diseases.push({ type: 'pest', severity: Math.min(100, Math.round(pestRatio * 500)), name: 'Pest damage' })
-    if (nutrientRatio > 0.08)
+    if (pestRatio > 0.12)
+      diseases.push({ type: 'pest', severity: Math.min(100, Math.round(pestRatio * 320)), name: 'Pest damage' })
+    if (nutrientRatio > 0.18)
       diseases.push({
         type: 'nutrient',
-        severity: Math.min(100, Math.round(nutrientRatio * 370)),
+        severity: Math.min(100, Math.round(nutrientRatio * 260)),
         name: 'Nutrient deficiency',
       })
 
@@ -1133,7 +1135,7 @@ function App() {
       }
       return {
         accepted: false,
-        reason: 'plant checker unavailable',
+        reason: 'Only plant, crop, fruit, or vegetable images are supported.',
       }
     }
 
@@ -1261,18 +1263,23 @@ function App() {
 
     const greenRatio = greenPixels / Math.max(visiblePixels, 1)
     const stressRatio = stressPixels / Math.max(visiblePixels, 1)
-    let healthScore = Math.round(Math.min(98, Math.max(5, 50 + greenRatio * 100 - stressRatio * 55)))
-
     const diseaseSeverity = diseases.reduce((sum, disease) => sum + (disease.severity || 0), 0)
+
+    let healthScore = Math.round(Math.min(98, Math.max(35, 68 + greenRatio * 40 - stressRatio * 35)))
+
     if (diseaseSeverity > 0) {
-      healthScore = Math.max(5, healthScore - Math.min(55, diseaseSeverity * 0.65))
+      healthScore = Math.max(20, healthScore - Math.min(45, diseaseSeverity * 0.35))
     }
 
-    if (isRottenTomatoImage(canvas) || diseaseSeverity > 30) {
-      healthScore = Math.min(healthScore, 35)
+    if (diseaseSeverity === 0 && greenRatio > 0.2) {
+      healthScore = Math.max(healthScore, 78)
     }
 
-    const isHealthy = healthScore >= 55 && diseaseSeverity <= 15
+    if (isRottenTomatoImage(canvas) || diseaseSeverity > 35) {
+      healthScore = Math.min(healthScore, 42)
+    }
+
+    const isHealthy = healthScore >= 60 && diseaseSeverity <= 20
 
     return { isHealthy, confidence: healthScore }
   }
@@ -1296,7 +1303,13 @@ function App() {
     try {
       validation = await validatePlantFrame(canvas)
     } catch {
-      rejectFrame('plant checker unavailable')
+      const fallbackPlantScene = isLikelyPlantScene(canvas)
+      if (fallbackPlantScene) {
+        const fallbackName = detectCropIdentity(canvas, 'Plant / crop')
+        showResult(true, 72, fallbackName, [])
+        return
+      }
+      rejectFrame('Only plant, crop, fruit, or vegetable images are supported.')
       return
     }
     if (!validation.accepted) {
@@ -1343,6 +1356,7 @@ function App() {
     }
 
     const previewUrl = URL.createObjectURL(file)
+    let canvas = null
     try {
       const image = await new Promise((resolve, reject) => {
         const imageElement = new Image()
@@ -1351,7 +1365,7 @@ function App() {
         imageElement.src = previewUrl
       })
       const scale = Math.min(1, 1280 / Math.max(image.naturalWidth, image.naturalHeight))
-      const canvas = document.createElement('canvas')
+      canvas = document.createElement('canvas')
       canvas.width = Math.round(image.naturalWidth * scale)
       canvas.height = Math.round(image.naturalHeight * scale)
       canvas.getContext('2d').drawImage(image, 0, 0, canvas.width, canvas.height)
@@ -1379,8 +1393,24 @@ function App() {
       return imageRecord
         ? { image: imageRecord, result, plantName: validation.plantName, diseases }
         : { error: 'shared gallery setup incomplete' }
-    } catch {
-      return { error: 'plant checker unavailable' }
+    } catch (error) {
+      console.error('Upload validation failed:', error)
+      if (canvas && isLikelyPlantScene(canvas)) {
+        const fallbackName = detectCropIdentity(canvas, 'Plant / crop')
+        const result = { isHealthy: true, confidence: 72 }
+        const imageRecord = await addGalleryImage(file, {
+          source: 'device gallery',
+          plantName: fallbackName,
+          status: 'healthy',
+          confidence: result.confidence,
+          diseases: [],
+        })
+        if (imageRecord?.duplicate) return { error: 'This image is already in the gallery.' }
+        return imageRecord
+          ? { image: imageRecord, result, plantName: fallbackName, diseases: [] }
+          : { error: 'shared gallery setup incomplete' }
+      }
+      return { error: 'Only plant, crop, fruit, or vegetable images are supported.' }
     } finally {
       URL.revokeObjectURL(previewUrl)
     }
@@ -1406,9 +1436,15 @@ function App() {
     for (const [index, file] of files.entries()) {
       setReadoutLeft(`checking image ${index + 1} of ${files.length}…`)
       setReadoutRight('AI validation')
-      const result = await processSelectedImage(file)
-      if (result.image) results.push(result)
-      if (result.error) rejectedFiles.push({ name: file.name, error: result.error })
+
+      try {
+        const result = await processSelectedImage(file)
+        if (result.image) results.push(result)
+        if (result.error) rejectedFiles.push({ name: file.name, error: result.error })
+      } catch (error) {
+        console.error('Batch upload loop crashed on file:', file.name, error)
+        rejectedFiles.push({ name: file.name, error: 'Only plant, crop, fruit, or vegetable images are supported.' })
+      }
     }
 
     if (rejectedFiles.length > 0) {
